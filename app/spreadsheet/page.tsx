@@ -1,13 +1,15 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { PRODUCTS, eur, type Product } from "@/lib/products";
 
-const uniq = (k: keyof Product) => [...new Set(PRODUCTS.map((p) => String(p[k])))].sort();
+const uniq = (k: keyof Product, items: Product[]) =>
+  [...new Set(items.map((p) => String(p[k])))].filter(Boolean).sort();
 
 const PER_PAGE = [5, 10, 20, 50];
 
 export default function Spreadsheet() {
+  const [allProducts, setAllProducts] = useState<Product[]>(PRODUCTS);
   const [q, setQ] = useState("");
   const [order, setOrder] = useState("");
   const [seller, setSeller] = useState("");
@@ -22,7 +24,17 @@ export default function Spreadsheet() {
   useEffect(() => {
     setFavs(JSON.parse(localStorage.getItem("pallix-favs") || "[]"));
     setLegal(!localStorage.getItem("pallix-legal"));
+
+    fetch("/api/products")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setAllProducts(data);
+        }
+      })
+      .catch(() => {});
   }, []);
+
   const toggleFav = (id: string) => {
     const n = favs.includes(id) ? favs.filter((f) => f !== id) : [...favs, id];
     setFavs(n);
@@ -30,59 +42,118 @@ export default function Spreadsheet() {
   };
 
   const list = useMemo(() => {
-    let l = PRODUCTS.filter((p) =>
-      (!q || `${p.title} ${p.seller} ${p.brand} ${p.category}`.toLowerCase().includes(q.toLowerCase())) &&
-      (!seller || p.seller === seller) && (!brand || p.brand === brand) && (!cat || p.category === cat) &&
-      (!onlyFavs || favs.includes(p.id))
+    let l = allProducts.filter(
+      (p) =>
+        (!q || `${p.title} ${p.seller} ${p.brand} ${p.category}`.toLowerCase().includes(q.toLowerCase())) &&
+        (!seller || p.seller === seller) &&
+        (!brand || p.brand === brand) &&
+        (!cat || p.category === cat) &&
+        (!onlyFavs || favs.includes(p.id))
     );
     if (order === "asc") l = [...l].sort((a, b) => a.price - b.price);
     if (order === "desc") l = [...l].sort((a, b) => b.price - a.price);
     return l;
-  }, [q, order, seller, brand, cat, onlyFavs, favs]);
+  }, [allProducts, q, order, seller, brand, cat, onlyFavs, favs]);
 
   const pages = Math.max(1, Math.ceil(list.length / perPage));
   const cur = Math.min(page, pages);
   const visible = list.slice((cur - 1) * perPage, cur * perPage);
-  const goPage = (n: number) => { setPage(n); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const goPage = (n: number) => {
+    setPage(n);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   // back to page 1 whenever filters change
-  useEffect(() => { setPage(1); }, [q, order, seller, brand, cat, onlyFavs]);
+  useEffect(() => {
+    setPage(1);
+  }, [q, order, seller, brand, cat, onlyFavs]);
 
-  const reset = () => { setQ(""); setOrder(""); setSeller(""); setBrand(""); setCat(""); setOnlyFavs(false); setPage(1); };
+  const reset = () => {
+    setQ("");
+    setOrder("");
+    setSeller("");
+    setBrand("");
+    setCat("");
+    setOnlyFavs(false);
+    setPage(1);
+  };
 
   return (
     <main>
       <div className="sheet-bar">
         <div className="sheet-row1">
-          <Link href="/" className="back">← Home</Link>
-          <input className="search" placeholder="Cerca (brand, seller, categoria, titolo)..." value={q} onChange={(e) => setQ(e.target.value)} />
+          <Link href="/" className="back">
+            ← Home
+          </Link>
+          <input
+            className="search"
+            placeholder="Cerca (brand, seller, categoria, titolo)..."
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
         </div>
         <div className="filters">
-          <select className="sel" value={order} onChange={(e) => { setOrder(e.target.value); }}>
-            <option value="">Ordina</option><option value="asc">Prezzo ↑</option><option value="desc">Prezzo ↓</option>
+          <select
+            className="sel"
+            value={order}
+            onChange={(e) => {
+              setOrder(e.target.value);
+            }}
+          >
+            <option value="">Ordina</option>
+            <option value="asc">Prezzo ↑</option>
+            <option value="desc">Prezzo ↓</option>
           </select>
           <select className="sel" value={seller} onChange={(e) => setSeller(e.target.value)}>
-            <option value="">Seller: Tutti</option>{uniq("seller").map((s) => <option key={s}>{s}</option>)}
+            <option value="">Seller: Tutti</option>
+            {uniq("seller", allProducts).map((s) => (
+              <option key={s}>{s}</option>
+            ))}
           </select>
           <select className="sel" value={brand} onChange={(e) => setBrand(e.target.value)}>
-            <option value="">Brand: Tutti</option>{uniq("brand").map((s) => <option key={s}>{s}</option>)}
+            <option value="">Brand: Tutti</option>
+            {uniq("brand", allProducts).map((s) => (
+              <option key={s}>{s}</option>
+            ))}
           </select>
           <select className="sel" value={cat} onChange={(e) => setCat(e.target.value)}>
-            <option value="">Categoria: Tutte</option>{uniq("category").map((s) => <option key={s}>{s}</option>)}
+            <option value="">Categoria: Tutte</option>
+            {uniq("category", allProducts).map((s) => (
+              <option key={s}>{s}</option>
+            ))}
           </select>
-          <button className="reset" onClick={reset}>Reset</button>
+          <button className="reset" onClick={reset}>
+            Reset
+          </button>
         </div>
         <div className="sheet-sub">
-          <span className="stat">Totale: <b>{list.length}</b></span>
-          <span className="stat">Pag <b>{cur}</b>/{pages}</span>
+          <span className="stat">
+            Totale: <b>{list.length}</b>
+          </span>
+          <span className="stat">
+            Pag <b>{cur}</b>/{pages}
+          </span>
           <span className="sp" />
           <label className="perpage">
             <span>Per pagina</span>
-            <select className="sel sel-sm" value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}>
-              {PER_PAGE.map((n) => <option key={n} value={n}>{n}</option>)}
+            <select
+              className="sel sel-sm"
+              value={perPage}
+              onChange={(e) => {
+                setPerPage(Number(e.target.value));
+                setPage(1);
+              }}
+            >
+              {PER_PAGE.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
             </select>
           </label>
-          <button className={`pillbtn ${onlyFavs ? "on" : ""}`} onClick={() => setOnlyFavs(!onlyFavs)}>♡ Preferiti</button>
+          <button className={`pillbtn ${onlyFavs ? "on" : ""}`} onClick={() => setOnlyFavs(!onlyFavs)}>
+            ♡ Preferiti
+          </button>
         </div>
       </div>
 
@@ -90,11 +161,22 @@ export default function Spreadsheet() {
         {visible.map((p, i) => (
           <Link key={p.id} href={`/item/${p.id}`} className="card" style={{ animationDelay: `${i * 40}ms` }}>
             <button
-              className={`fav ${favs.includes(p.id) ? "on" : ""}`} aria-label="Preferiti" title="Aggiungi/Rimuovi dai preferiti"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }}
+              className={`fav ${favs.includes(p.id) ? "on" : ""}`}
+              aria-label="Preferiti"
+              title="Aggiungi/Rimuovi dai preferiti"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleFav(p.id);
+              }}
             >
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden>
-                <path d="M12 20.5s-7.5-4.6-9.8-9.1C.6 8 2 4.7 5.2 3.7 7.6 3 9.9 4 12 6.4 14.1 4 16.4 3 18.8 3.7c3.2 1 4.6 4.3 3 7.7-2.3 4.5-9.8 9.1-9.8 9.1z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+                <path
+                  d="M12 20.5s-7.5-4.6-9.8-9.1C.6 8 2 4.7 5.2 3.7 7.6 3 9.9 4 12 6.4 14.1 4 16.4 3 18.8 3.7c3.2 1 4.6 4.3 3 7.7-2.3 4.5-9.8 9.1-9.8 9.1z"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinejoin="round"
+                />
               </svg>
             </button>
             <div className="card-media">
@@ -103,7 +185,9 @@ export default function Spreadsheet() {
             </div>
             <div className="card-body">
               <div className="card-title">{p.title}</div>
-              <div className="card-meta">{p.seller} • {p.category}</div>
+              <div className="card-meta">
+                {p.seller} • {p.category}
+              </div>
               <span className="buy">Pallix Buy</span>
             </div>
           </Link>
@@ -113,9 +197,15 @@ export default function Spreadsheet() {
 
       {pages > 1 && (
         <nav className="pager" aria-label="Paginazione">
-          <button className="pager-btn" disabled={cur <= 1} onClick={() => goPage(cur - 1)} aria-label="Pagina precedente">←</button>
-          <span className="pager-info">Pag {cur}/{pages}</span>
-          <button className="pager-btn" disabled={cur >= pages} onClick={() => goPage(cur + 1)} aria-label="Pagina successiva">→</button>
+          <button className="pager-btn" disabled={cur <= 1} onClick={() => goPage(cur - 1)} aria-label="Pagina precedente">
+            ←
+          </button>
+          <span className="pager-info">
+            Pag {cur}/{pages}
+          </span>
+          <button className="pager-btn" disabled={cur >= pages} onClick={() => goPage(cur + 1)} aria-label="Pagina successiva">
+            →
+          </button>
         </nav>
       )}
 
@@ -124,18 +214,40 @@ export default function Spreadsheet() {
           <div className="modal glass" role="dialog" aria-modal="true">
             <div className="modal-head">
               <div className="tg-ico">ⓘ</div>
-              <div><div className="eyebrow">Info</div><h3>Avviso legale</h3><p>Limitazione di responsabilità</p></div>
+              <div>
+                <div className="eyebrow">Info</div>
+                <h3>Avviso legale</h3>
+                <p>Limitazione di responsabilità</p>
+              </div>
             </div>
             <div className="modal-body">
-              <p>Il presente sito web è fornito esclusivamente a scopo informativo e di aggregazione di risorse. Il sito <b>non vende alcun articolo</b>, <b>non fornisce servizi di acquisto</b>, <b>non opera come intermediario</b> e <b>non rappresenta</b> venditori, marketplace o agent di terze parti.</p>
-              <p>Qualsiasi collegamento a servizi/contenuti di terzi è pubblicato <b>senza garanzia</b>. Eventuali operazioni avvengono <b>esclusivamente</b> tra l’utente e la terza parte. L’utente è l’unico responsabile di ogni valutazione e scelta.</p>
-              <p>Proseguendo nella navigazione, l’utente dichiara di comprendere e accettare che ogni decisione di acquisto è assunta <b>in autonomia</b> e sotto la propria esclusiva responsabilità.</p>
+              <p>
+                Il presente sito web è fornito esclusivamente a scopo informativo e di aggregazione di risorse. Il sito{" "}
+                <b>non vende alcun articolo</b>, <b>non fornisce servizi di acquisto</b>, <b>non opera come intermediario</b> e{" "}
+                <b>non rappresenta</b> venditori, marketplace o agent di terze parti.
+              </p>
+              <p>
+                Qualsiasi collegamento a servizi/contenuti di terzi è pubblicato <b>senza garanzia</b>. Eventuali operazioni
+                avvengono <b>esclusivamente</b> tra l’utente e la terza parte. L’utente è l’unico responsabile di ogni
+                valutazione e scelta.
+              </p>
+              <p>
+                Proseguendo nella navigazione, l’utente dichiara di comprendere e accettare che ogni decisione di acquisto è
+                assunta <b>in autonomia</b> e sotto la propria esclusiva responsabilità.
+              </p>
             </div>
-            <button className="ok" onClick={() => { localStorage.setItem("pallix-legal", "1"); setLegal(false); }}>Ho compreso</button>
+            <button
+              className="ok"
+              onClick={() => {
+                localStorage.setItem("pallix-legal", "1");
+                setLegal(false);
+              }}
+            >
+              Ho compreso
+            </button>
           </div>
         </div>
       )}
     </main>
   );
 }
-
