@@ -1,3 +1,5 @@
+import extra from "../data/products.json";
+
 export type Product = {
   id: string;
   title: string;
@@ -6,10 +8,12 @@ export type Product = {
   brand: string;
   price: number;
   image: string;
+  cssbuyUrl?: string;
+  doppelfitUrl?: string;
 };
 
 /** 10 sample products imported from the reference catalogue (images stored locally in /public/products). */
-export const PRODUCTS: Product[] = [
+const BASE: Product[] = [
   { id: "chrome-hearts-finds-973", title: "Chrome Hearts Finds (973)", seller: "Mook", category: "OTHER", brand: "Chrome Hearts", price: 21.11, image: "/products/p1.jpg" },
   { id: "nike-running-sneakers-370", title: "Nike Running Sneakers (370)", seller: "JMDY", category: "SNEAKERS", brand: "Nike", price: 22.72, image: "/products/p2.jpg" },
   { id: "cavempt-finds-41", title: "Cavempt Finds (41)", seller: "Akdingji", category: "OTHER", brand: "Cav Empt", price: 17.1, image: "/products/p3.jpg" },
@@ -22,4 +26,7 @@ export const PRODUCTS: Product[] = [
   { id: "nike-kobe-413", title: "Nike Kobe (413)", seller: "Yolo66", category: "SNEAKERS", brand: "Nike", price: 54.79, image: "/products/p10.jpg" },
 ];
 
+export const PRODUCTS: Product[] = [...(extra as Product[]), ...BASE];
+
 export const eur = (n: number) => `€ ${n.toFixed(2)}`;
+
