@@ -1,4 +1,4 @@
-:root { color-scheme: dark; --ease: cubic-bezier(0.2, 0.8, 0.2, 1); }
+﻿:root { color-scheme: dark; --ease: cubic-bezier(0.2, 0.8, 0.2, 1); }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: #000; color: #fff; }
 body {
@@ -112,7 +112,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .foot { text-align: center; padding: 40px 20px 60px; color: rgba(255,255,255,.35); font-size: 12px; }
 
 /* ---------- spreadsheet ---------- */
-.sheet-bar { position: sticky; top: 0; z-index: 50; padding: 20px 20px 16px; background: linear-gradient(#000 70%, transparent); border-bottom: 1px solid rgba(255,255,255,.08); }
+.sheet-bar { position: sticky; top: 0; z-index: 50; padding: 20px 20px 16px; background: rgba(0,0,0,.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid rgba(255,255,255,.08); box-shadow: 0 18px 30px -12px #000; }
 .sheet-row1 { display: flex; align-items: center; gap: 16px; max-width: 1700px; margin: 0 auto; }
 .back { height: 32px; padding: 0 12px; display: inline-flex; align-items: center; border-radius: 999px; font-size: 12px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); flex: none; }
 .search { flex: 1; max-width: 780px; margin: 0 auto; height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.06); color: #fff; font-size: 14px; outline: none; }
@@ -186,3 +186,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .pager-btn:disabled { opacity: .35; cursor: default; }
 .pager-info { min-width: 90px; text-align: center; padding: 8px 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.04); font-size: 12px; }
 @media (max-width: 520px) { .sheet-sub { flex-wrap: wrap; } .sheet-sub .sp { display: none; } }
+
+@media (max-width: 640px) { .sheet-bar { position: static; } }
+
