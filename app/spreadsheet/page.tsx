@@ -1,0 +1,117 @@
+"use client";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import { PRODUCTS, eur, type Product } from "@/lib/products";
+
+const uniq = (k: keyof Product) => [...new Set(PRODUCTS.map((p) => String(p[k])))].sort();
+
+export default function Spreadsheet() {
+  const [q, setQ] = useState("");
+  const [order, setOrder] = useState("");
+  const [seller, setSeller] = useState("");
+  const [brand, setBrand] = useState("");
+  const [cat, setCat] = useState("");
+  const [favs, setFavs] = useState<string[]>([]);
+  const [onlyFavs, setOnlyFavs] = useState(false);
+  const [legal, setLegal] = useState(false);
+  const [seed, setSeed] = useState(0);
+
+  useEffect(() => {
+    setFavs(JSON.parse(localStorage.getItem("pallix-favs") || "[]"));
+    setLegal(!localStorage.getItem("pallix-legal"));
+  }, []);
+  const toggleFav = (id: string) => {
+    const n = favs.includes(id) ? favs.filter((f) => f !== id) : [...favs, id];
+    setFavs(n);
+    localStorage.setItem("pallix-favs", JSON.stringify(n));
+  };
+
+  const list = useMemo(() => {
+    let l = PRODUCTS.filter((p) =>
+      (!q || `${p.title} ${p.seller} ${p.brand} ${p.category}`.toLowerCase().includes(q.toLowerCase())) &&
+      (!seller || p.seller === seller) && (!brand || p.brand === brand) && (!cat || p.category === cat) &&
+      (!onlyFavs || favs.includes(p.id))
+    );
+    if (order === "asc") l = [...l].sort((a, b) => a.price - b.price);
+    if (order === "desc") l = [...l].sort((a, b) => b.price - a.price);
+    if (seed) l = [...l].sort((a, b) => ((a.id.length * seed) % 7) - ((b.id.length * seed) % 7) || a.id.localeCompare(b.id) * (seed % 2 ? 1 : -1));
+    return l;
+  }, [q, order, seller, brand, cat, onlyFavs, favs, seed]);
+
+  const reset = () => { setQ(""); setOrder(""); setSeller(""); setBrand(""); setCat(""); setOnlyFavs(false); setSeed(0); };
+
+  return (
+    <main>
+      <div className="sheet-bar">
+        <div className="sheet-row1">
+          <Link href="/" className="back">← Home</Link>
+          <input className="search" placeholder="Cerca (brand, seller, categoria, titolo)..." value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
+        <div className="filters">
+          <select className="sel" value={order} onChange={(e) => { setOrder(e.target.value); setSeed(0); }}>
+            <option value="">Ordina</option><option value="asc">Prezzo ↑</option><option value="desc">Prezzo ↓</option>
+          </select>
+          <select className="sel" value={seller} onChange={(e) => setSeller(e.target.value)}>
+            <option value="">Seller: Tutti</option>{uniq("seller").map((s) => <option key={s}>{s}</option>)}
+          </select>
+          <select className="sel" value={brand} onChange={(e) => setBrand(e.target.value)}>
+            <option value="">Brand: Tutti</option>{uniq("brand").map((s) => <option key={s}>{s}</option>)}
+          </select>
+          <select className="sel" value={cat} onChange={(e) => setCat(e.target.value)}>
+            <option value="">Categoria: Tutte</option>{uniq("category").map((s) => <option key={s}>{s}</option>)}
+          </select>
+          <button className="reset" onClick={reset}>Reset</button>
+        </div>
+        <div className="sheet-sub">
+          <span>Totale: <b>{list.length}</b></span>
+          <span>Pag 1/1</span>
+          <span className="sp" />
+          <button className={`pillbtn ${onlyFavs ? "on" : ""}`} onClick={() => setOnlyFavs(!onlyFavs)}>♡ Preferiti</button>
+          <button className="pillbtn shuffle" onClick={() => { setOrder(""); setSeed(Math.floor(Math.random() * 1000) + 1); }}>⤨ Shuffle</button>
+        </div>
+      </div>
+
+      <div className="grid">
+        {list.map((p, i) => (
+          <Link key={p.id} href={`/item/${p.id}`} className="card" style={{ animationDelay: `${i * 40}ms` }}>
+            <button
+              className={`fav ${favs.includes(p.id) ? "on" : ""}`} aria-label="Preferiti" title="Aggiungi/Rimuovi dai preferiti"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFav(p.id); }}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden>
+                <path d="M12 20.5s-7.5-4.6-9.8-9.1C.6 8 2 4.7 5.2 3.7 7.6 3 9.9 4 12 6.4 14.1 4 16.4 3 18.8 3.7c3.2 1 4.6 4.3 3 7.7-2.3 4.5-9.8 9.1-9.8 9.1z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+              </svg>
+            </button>
+            <div className="card-media">
+              <img src={p.image} alt={p.title} loading="lazy" draggable={false} />
+              <div className="price">{eur(p.price)}</div>
+            </div>
+            <div className="card-body">
+              <div className="card-title">{p.title}</div>
+              <div className="card-meta">{p.seller} • {p.category}</div>
+              <span className="buy">Pallix Buy</span>
+            </div>
+          </Link>
+        ))}
+        {!list.length && <div className="empty">Nessun risultato.</div>}
+      </div>
+
+      {legal && (
+        <div className="overlay">
+          <div className="modal glass" role="dialog" aria-modal="true">
+            <div className="modal-head">
+              <div className="tg-ico">ⓘ</div>
+              <div><div className="eyebrow">Info</div><h3>Avviso legale</h3><p>Limitazione di responsabilità</p></div>
+            </div>
+            <div className="modal-body">
+              <p>Il presente sito web è fornito esclusivamente a scopo informativo e di aggregazione di risorse. Il sito <b>non vende alcun articolo</b>, <b>non fornisce servizi di acquisto</b>, <b>non opera come intermediario</b> e <b>non rappresenta</b> venditori, marketplace o agent di terze parti.</p>
+              <p>Qualsiasi collegamento a servizi/contenuti di terzi è pubblicato <b>senza garanzia</b>. Eventuali operazioni avvengono <b>esclusivamente</b> tra l’utente e la terza parte. L’utente è l’unico responsabile di ogni valutazione e scelta.</p>
+              <p>Proseguendo nella navigazione, l’utente dichiara di comprendere e accettare che ogni decisione di acquisto è assunta <b>in autonomia</b> e sotto la propria esclusiva responsabilità.</p>
+            </div>
+            <button className="ok" onClick={() => { localStorage.setItem("pallix-legal", "1"); setLegal(false); }}>Ho compreso</button>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
