@@ -29,6 +29,34 @@ export function cssbuyLink(p: Parsed): string {
   return `https://www.cssbuy.com/shop/goodsDetail?id=${p.itemId}&type=${type}`;
 }
 
+/** Genera il link affiliato corto (cssb.uy/...) chiamando l'API del Creator Center con la tua sessione. */
+export async function cssbuyShortLink(sourceUrl: string): Promise<{ url?: string; error?: string }> {
+  const token = process.env.CSSBUY_TOKEN;
+  if (!token) return { error: "CSSBUY_TOKEN mancante in .env.local" };
+  try {
+    const r = await fetch("https://www.cssbuy.com/api/v3/user/goods/shortLink", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json;charset=UTF-8",
+        accept: "application/json, text/plain, */*",
+        authorization: `Bearer ${token}`,
+        origin: "https://www.cssbuy.com",
+        referer: "https://www.cssbuy.com/shop/affiliate",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36",
+        ...(process.env.CSSBUY_COOKIE ? { cookie: process.env.CSSBUY_COOKIE } : {}),
+        ...(process.env.CSSBUY_DEVICE_ID ? { "device-id": process.env.CSSBUY_DEVICE_ID } : {}),
+      },
+      body: JSON.stringify({ goodsUrl: sourceUrl }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const d = await r.json();
+    if (d.code === 0 && d.data) return { url: d.data };
+    return { error: d.msg || `Risposta CSSBuy ${r.status} (token scaduto?)` };
+  } catch (e) {
+    return { error: "Errore chiamata CSSBuy: " + (e as Error).message };
+  }
+}
+
 /** Link Doppelfit: usa il template in .env (segnaposto {url} = link sorgente codificato, {id} = ID). */
 export function doppelfitLink(p: Parsed): string {
   const tpl = process.env.DOPPELFIT_URL_TEMPLATE || "https://www.doppelfit.com/?url={url}";

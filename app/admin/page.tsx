@@ -18,7 +18,7 @@ export default function Admin() {
     if (!r.ok) { setMsg(d.error); return; }
     setF({ ...empty, title: d.title, image: d.image, price: d.price, cssbuyUrl: d.cssbuyUrl, doppelfitUrl: d.doppelfitUrl });
     setReady(true);
-    setMsg("Link affiliati generati. Completa i campi vuoti (prezzo/immagine) e salva.");
+    setMsg(d.cssbuyAffiliate ? "Link affiliato CSSBuy generato ✔. Completa i campi vuoti e salva." : `⚠ Link CSSBuy NON affiliato: ${d.cssbuyError}. Incolla tu il link cssb.uy oppure rinnova il token.`);
   }
 
   async function save() {
