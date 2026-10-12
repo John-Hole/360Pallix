@@ -24,12 +24,9 @@ export function parseSourceUrl(raw: string): Parsed | null {
 
 /** Link prodotto CSSBuy con codice affiliato. */
 export function cssbuyLink(p: Parsed): string {
-  const path =
-    p.platform === "weidian" ? `item-micro-${p.itemId}.html`
-    : p.platform === "1688" ? `item-1688-${p.itemId}.html`
-    : `item-${p.itemId}.html`;
-  const ref = process.env.CSSBUY_REF || "";
-  return `https://www.cssbuy.com/${path}${ref ? `?promotionCode=${encodeURIComponent(ref)}` : ""}`;
+  // Formato reale della pagina prodotto CSSBuy (visto dallo screenshot). type: micro = Weidian.
+  const type = p.platform === "weidian" ? "micro" : p.platform;
+  return `https://www.cssbuy.com/shop/goodsDetail?id=${p.itemId}&type=${type}`;
 }
 
 /** Link Doppelfit: usa il template in .env (segnaposto {url} = link sorgente codificato, {id} = ID). */
