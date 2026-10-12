@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
 import { BASE_PRODUCTS, Product } from "@/lib/products";
+import { formatDoppelfitLink } from "@/lib/convert";
 
 const FILE = path.join(process.cwd(), "data", "products.json");
 
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
     price,
     image: body.image,
     cssbuyUrl: body.cssbuyUrl || undefined,
-    doppelfitUrl: body.doppelfitUrl || undefined,
+    doppelfitUrl: body.doppelfitUrl ? formatDoppelfitLink(body.doppelfitUrl) : undefined,
   };
 
   list.unshift(product);

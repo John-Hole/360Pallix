@@ -80,7 +80,7 @@ export async function parseSourceUrl(raw: string): Promise<Parsed | null> {
 
 /**
  * Link prodotto CSSBuy con codice affiliato permanente (promotionCode).
- * Usa il formato verificato identico a quello dei link ufficiali generati da CSSBuy.
+ * Formato ufficiale identico a quello dei link verificati generati da CSSBuy.
  */
 export function cssbuyLink(p: Parsed): string {
   const ref = process.env.CSSBUY_PROMOTION_CODE || process.env.CSSBUY_REF || "2ab90a34eeaa437b";
@@ -89,10 +89,35 @@ export function cssbuyLink(p: Parsed): string {
   return `https://www.cssbuy.com/shop/goodsDetail?promotionCode=${encodeURIComponent(ref)}&item-${prefix}-${p.itemId}.html&id=${p.itemId}&type=${type}`;
 }
 
-/** Link Doppelfit: configurabile tramite template in .env */
+/**
+ * Assicura che un link o ID Doppelfit contenga sempre il codice referral verificato (PPnCbrec).
+ */
+export function formatDoppelfitLink(input: string): string {
+  const raw = (input || "").trim();
+  if (!raw) return "";
+  const ref = process.env.DOPPELFIT_REF || "PPnCbrec";
+
+  // Se è solo l'ID dell'item (es. 5YYUD0ImPn3a4GStPWbkyA)
+  if (/^[a-zA-Z0-9_-]{20,24}$/.test(raw)) {
+    return `https://doppel.fit/item/${raw}?ref=${encodeURIComponent(ref)}`;
+  }
+
+  try {
+    const u = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
+    if (u.hostname.includes("doppel.fit")) {
+      u.searchParams.set("ref", ref);
+      return u.toString();
+    }
+  } catch {
+    // fallback
+  }
+  return raw;
+}
+
+/** Link Doppelfit di fallback configurabile */
 export function doppelfitLink(p: Parsed): string {
-  const tpl = process.env.DOPPELFIT_URL_TEMPLATE || "https://doppel.fit/item?url={url}";
-  return tpl.replace("{url}", encodeURIComponent(p.sourceUrl)).replace("{id}", p.itemId);
+  const ref = process.env.DOPPELFIT_REF || "PPnCbrec";
+  return `https://doppel.fit/?ref=${encodeURIComponent(ref)}`;
 }
 
 const decode = (s: string) => s.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'");

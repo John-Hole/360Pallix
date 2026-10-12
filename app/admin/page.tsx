@@ -314,14 +314,18 @@ export default function AdminPage() {
 
             <div>
               <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "#818cf8", fontWeight: 600 }}>
-                🔍 Link Doppelfit (generato in automatico)
+                🔍 Link o ID Doppelfit (il tuo referral ref=PPnCbrec viene applicato in automatico)
               </label>
               <input
                 type="text"
                 value={f.doppelfitUrl}
                 onChange={setField("doppelfitUrl")}
+                placeholder="es. https://doppel.fit/x5sUY8JQ oppure https://doppel.fit/item/5YYUD... oppure lascia vuoto"
                 style={{ ...inputStyle, borderColor: "rgba(99, 102, 241, 0.4)" }}
               />
+              <span style={{ fontSize: 11.5, color: "rgba(255,255,255,0.5)", marginTop: 4, display: "block" }}>
+                Puoi incollare il link breve di condivisione di Doppelfit o l&apos;URL completo: il tuo codice referral <code>?ref=PPnCbrec</code> viene garantito e aggiunto da solo.
+              </span>
             </div>
 
             <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 18 }}>
