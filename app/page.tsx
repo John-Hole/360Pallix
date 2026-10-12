@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { PRODUCTS, eur } from "@/lib/products";
 
 const PILLS = [
@@ -28,7 +28,6 @@ function useReveal() {
 }
 
 export default function Home() {
-  const [tg, setTg] = useState(true);
   const rail = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   useReveal();
@@ -62,19 +61,6 @@ export default function Home() {
             <Link className="hero-pill" href={p.href}>{p.label}</Link>
           </div>
         ))}
-        {tg && (
-          <div className="tg glass">
-            <div className="tg-head">
-              <div className="tg-ico"><Plane /></div>
-              <div>
-                <div className="eyebrow">Community</div>
-                <h3>Entra nel gruppo Telegram</h3>
-              </div>
-              <button className="iconbtn" aria-label="Chiudi" onClick={() => setTg(false)}>✕</button>
-            </div>
-            <a className="tg-cta" href="https://t.me/" target="_blank" rel="noreferrer"><Plane /> Entra ora →</a>
-          </div>
-        )}
         <div className="scrollHint">Scroll ↓</div>
       </section>
 
@@ -132,12 +118,15 @@ export default function Home() {
               <Link className="cta ghost" href="/#coupon" style={{ marginTop: 0 }}>Apri i Coupon →</Link>
               <p className="sec-sub">In arrivo a breve.</p>
             </div>
-            <div className="tile glass">
-              <div className="eyebrow">Community</div>
-              <h3>Entra nel gruppo Telegram</h3>
-              <a className="tg-cta" href="https://t.me/" target="_blank" rel="noreferrer"><Plane /> Entra ora →</a>
-            </div>
           </div>
+        </div>
+      </section>
+
+      <section className="section" id="community">
+        <div className="wrap">
+          <div className="eyebrow reveal">Community</div>
+          <h2 className="sec-title reveal">Community</h2>
+          <p className="sec-sub reveal">Il link alla community sarà disponibile a breve.</p>
         </div>
       </section>
 
@@ -145,3 +134,4 @@ export default function Home() {
     </main>
   );
 }
+

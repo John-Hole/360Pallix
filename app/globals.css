@@ -41,7 +41,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(rgba(255,255,255,.04), transparent 18%, transparent 82%, rgba(255,255,255,.04)); }
 .hero-wordmark {
   position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 1;
-  font-size: clamp(56px, 16vw, 220px); font-weight: 800; letter-spacing: -.04em; color: rgba(255,255,255,.035);
+  font-size: clamp(56px, 17vw, 240px); font-weight: 800; letter-spacing: -.04em; color: rgba(255,255,255,.11);
+  -webkit-text-stroke: 1px rgba(255,255,255,.16); text-shadow: 0 0 80px rgba(255,255,255,.08);
 }
 .orbit { position: absolute; left: 50%; top: 50%; z-index: 20; animation: float 7s ease-in-out infinite; animation-delay: var(--d, 0s); }
 .orbit-pos { transform: translate(-50%, -50%) translate(var(--x), var(--y)); }
