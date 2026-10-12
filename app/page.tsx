@@ -50,10 +50,6 @@ export default function Home() {
 
   return (
     <main>
-      <div className="topbar">
-        <div className="lang"><b>IT</b>Italiano <span aria-hidden>⌄</span></div>
-      </div>
-
       <section className="hero" ref={heroRef}>
         <div className="hero-wordmark">Pallix360</div>
         {PILLS.map((p) => (
@@ -134,4 +130,5 @@ export default function Home() {
     </main>
   );
 }
+
 

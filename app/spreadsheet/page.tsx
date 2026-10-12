@@ -1,9 +1,11 @@
-"use client";
+﻿"use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { PRODUCTS, eur, type Product } from "@/lib/products";
 
 const uniq = (k: keyof Product) => [...new Set(PRODUCTS.map((p) => String(p[k])))].sort();
+
+const PER_PAGE = [5, 10, 20, 50];
 
 export default function Spreadsheet() {
   const [q, setQ] = useState("");
@@ -14,7 +16,8 @@ export default function Spreadsheet() {
   const [favs, setFavs] = useState<string[]>([]);
   const [onlyFavs, setOnlyFavs] = useState(false);
   const [legal, setLegal] = useState(false);
-  const [seed, setSeed] = useState(0);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(PER_PAGE[0]);
 
   useEffect(() => {
     setFavs(JSON.parse(localStorage.getItem("pallix-favs") || "[]"));
@@ -34,11 +37,18 @@ export default function Spreadsheet() {
     );
     if (order === "asc") l = [...l].sort((a, b) => a.price - b.price);
     if (order === "desc") l = [...l].sort((a, b) => b.price - a.price);
-    if (seed) l = [...l].sort((a, b) => ((a.id.length * seed) % 7) - ((b.id.length * seed) % 7) || a.id.localeCompare(b.id) * (seed % 2 ? 1 : -1));
     return l;
-  }, [q, order, seller, brand, cat, onlyFavs, favs, seed]);
+  }, [q, order, seller, brand, cat, onlyFavs, favs]);
 
-  const reset = () => { setQ(""); setOrder(""); setSeller(""); setBrand(""); setCat(""); setOnlyFavs(false); setSeed(0); };
+  const pages = Math.max(1, Math.ceil(list.length / perPage));
+  const cur = Math.min(page, pages);
+  const visible = list.slice((cur - 1) * perPage, cur * perPage);
+  const goPage = (n: number) => { setPage(n); window.scrollTo({ top: 0, behavior: "smooth" }); };
+
+  // back to page 1 whenever filters change
+  useEffect(() => { setPage(1); }, [q, order, seller, brand, cat, onlyFavs]);
+
+  const reset = () => { setQ(""); setOrder(""); setSeller(""); setBrand(""); setCat(""); setOnlyFavs(false); setPage(1); };
 
   return (
     <main>
@@ -48,7 +58,7 @@ export default function Spreadsheet() {
           <input className="search" placeholder="Cerca (brand, seller, categoria, titolo)..." value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
         <div className="filters">
-          <select className="sel" value={order} onChange={(e) => { setOrder(e.target.value); setSeed(0); }}>
+          <select className="sel" value={order} onChange={(e) => { setOrder(e.target.value); }}>
             <option value="">Ordina</option><option value="asc">Prezzo ↑</option><option value="desc">Prezzo ↓</option>
           </select>
           <select className="sel" value={seller} onChange={(e) => setSeller(e.target.value)}>
@@ -63,16 +73,21 @@ export default function Spreadsheet() {
           <button className="reset" onClick={reset}>Reset</button>
         </div>
         <div className="sheet-sub">
-          <span>Totale: <b>{list.length}</b></span>
-          <span>Pag 1/1</span>
+          <span className="stat">Totale: <b>{list.length}</b></span>
+          <span className="stat">Pag <b>{cur}</b>/{pages}</span>
           <span className="sp" />
+          <label className="perpage">
+            <span>Per pagina</span>
+            <select className="sel sel-sm" value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }}>
+              {PER_PAGE.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </label>
           <button className={`pillbtn ${onlyFavs ? "on" : ""}`} onClick={() => setOnlyFavs(!onlyFavs)}>♡ Preferiti</button>
-          <button className="pillbtn shuffle" onClick={() => { setOrder(""); setSeed(Math.floor(Math.random() * 1000) + 1); }}>⤨ Shuffle</button>
         </div>
       </div>
 
       <div className="grid">
-        {list.map((p, i) => (
+        {visible.map((p, i) => (
           <Link key={p.id} href={`/item/${p.id}`} className="card" style={{ animationDelay: `${i * 40}ms` }}>
             <button
               className={`fav ${favs.includes(p.id) ? "on" : ""}`} aria-label="Preferiti" title="Aggiungi/Rimuovi dai preferiti"
@@ -96,6 +111,14 @@ export default function Spreadsheet() {
         {!list.length && <div className="empty">Nessun risultato.</div>}
       </div>
 
+      {pages > 1 && (
+        <nav className="pager" aria-label="Paginazione">
+          <button className="pager-btn" disabled={cur <= 1} onClick={() => goPage(cur - 1)} aria-label="Pagina precedente">←</button>
+          <span className="pager-info">Pag {cur}/{pages}</span>
+          <button className="pager-btn" disabled={cur >= pages} onClick={() => goPage(cur + 1)} aria-label="Pagina successiva">→</button>
+        </nav>
+      )}
+
       {legal && (
         <div className="overlay">
           <div className="modal glass" role="dialog" aria-modal="true">
@@ -115,3 +138,4 @@ export default function Spreadsheet() {
     </main>
   );
 }
+
