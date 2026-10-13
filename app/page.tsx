@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useRef } from "react";
-import { PRODUCTS, eur } from "@/lib/products";
+import { useEffect, useRef, useState } from "react";
+import { PRODUCTS, eur, type Product } from "@/lib/products";
 
 const PILLS = [
   { label: "Spreadsheet", href: "/spreadsheet", x: "min(26vw, 380px)", y: "-24vh", d: "0s" },
@@ -30,7 +30,19 @@ function useReveal() {
 export default function Home() {
   const rail = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
+  const [productList, setProductList] = useState<Product[]>(PRODUCTS);
   useReveal();
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setProductList(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // subtle parallax of the pills following the pointer
   useEffect(() => {
@@ -67,13 +79,24 @@ export default function Home() {
           <div className="rail reveal">
             <div className="rail-scroll" ref={rail}>
               <div className="rail-track">
-                {PRODUCTS.map((p) => (
+                {productList.map((p) => (
                   <Link key={p.id} href={`/item/${p.id}`} className="rail-card">
-                    <img src={p.image} alt={p.title} loading="lazy" draggable={false} />
+                    <img
+                      src={p.image}
+                      alt={p.title}
+                      loading="lazy"
+                      draggable={false}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src =
+                          "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='370' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='14'%3EImmagine non disp.%3C/text%3E%3C/svg%3E";
+                      }}
+                    />
                     <div className="rail-meta">
                       <span className="badge">WEEKLY BEST</span>
                       <div className="rail-title">{p.title}</div>
-                      <div className="rail-sub">{p.category} • {p.seller}</div>
+                      <div className="rail-sub">
+                        {p.seller && p.seller !== "—" && p.seller !== "-" ? `${p.category} • ${p.seller}` : p.category}
+                      </div>
                     </div>
                   </Link>
                 ))}

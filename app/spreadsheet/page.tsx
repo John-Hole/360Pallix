@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { PRODUCTS, eur, type Product } from "@/lib/products";
 
 const uniq = (k: keyof Product, items: Product[]) =>
-  [...new Set(items.map((p) => String(p[k])))].filter(Boolean).sort();
+  [...new Set(items.map((p) => String(p[k] || "")).filter((s) => s && s !== "-" && s !== "—"))].sort();
 
 const PER_PAGE = [10, 20, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
 
@@ -180,13 +180,23 @@ export default function Spreadsheet() {
               </svg>
             </button>
             <div className="card-media">
-              <img src={p.image} alt={p.title} loading="lazy" draggable={false} />
+              <img
+                src={p.image}
+                alt={p.title}
+                loading="lazy"
+                draggable={false}
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src =
+                    "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='370' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='14'%3EImmagine non disp.%3C/text%3E%3C/svg%3E";
+                }}
+              />
               <div className="price">{eur(p.price)}</div>
             </div>
             <div className="card-body">
               <div className="card-title">{p.title}</div>
               <div className="card-meta">
-                {p.seller} • {p.category}
+                {p.seller && p.seller !== "—" && p.seller !== "-" ? `${p.seller} • ` : ""}
+                {p.category}
               </div>
               <span className="buy">Pallix Buy</span>
             </div>

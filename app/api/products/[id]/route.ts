@@ -27,27 +27,30 @@ export async function PUT(req: Request, context: RouteContext) {
   }
 
   const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
-  if (body.password !== expectedPw) {
+  const headerPw = req.headers.get("x-admin-password");
+  const password = body.password || headerPw || "";
+
+  if (password !== expectedPw) {
     return NextResponse.json({ error: "Password admin errata" }, { status: 401 });
   }
 
   const price = parseFloat(String(body.price).replace(",", "."));
-  if (!body.title || !body.image || isNaN(price)) {
+  if (!body.title || !body.image || isNaN(price) || price <= 0) {
     return NextResponse.json(
-      { error: "Titolo, immagine e prezzo valido sono obbligatori" },
+      { error: "Titolo, immagine e prezzo valido (> 0) sono obbligatori" },
       { status: 400 }
     );
   }
 
   const updated = await updateProduct(id, {
-    title: body.title.trim(),
+    title: String(body.title).trim(),
     price,
-    image: body.image.trim(),
+    image: String(body.image).trim(),
     category: body.category || "OTHER",
-    brand: body.brand?.trim() || "—",
-    seller: body.seller?.trim() || "—",
-    cssbuyUrl: body.cssbuyUrl?.trim() || undefined,
-    doppelfitUrl: body.doppelfitUrl ? formatDoppelfitLink(body.doppelfitUrl) : undefined,
+    brand: body.brand !== undefined ? String(body.brand).trim() : "—",
+    seller: body.seller !== undefined ? String(body.seller).trim() : "—",
+    cssbuyUrl: body.cssbuyUrl !== undefined ? (String(body.cssbuyUrl).trim() || undefined) : undefined,
+    doppelfitUrl: body.doppelfitUrl !== undefined ? (String(body.doppelfitUrl).trim() ? formatDoppelfitLink(body.doppelfitUrl) : undefined) : undefined,
   });
 
   if (!updated) {

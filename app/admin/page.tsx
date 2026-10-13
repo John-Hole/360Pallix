@@ -119,13 +119,18 @@ const EXTRACTOR_SCRIPT = `(() => {
                     sourceUrl = \`https://www.cssbuy.com/item-\${item.goods_id || item.item_id}.html\`;
                   }
 
+                  let rawSeller = item.shop_name || item.seller || "";
+                  if (/^BBB[a-zA-Z0-9_\-]+$/i.test(rawSeller) || /^tb\d+$/i.test(rawSeller) || /^[a-zA-Z0-9_\-]{20,}$/.test(rawSeller)) {
+                    rawSeller = "";
+                  }
+
                   seenTitles.add(title);
                   products.push({
                     title,
                     image,
                     price: price > 0 ? price : 19.99,
                     sourceUrl: sourceUrl || window.location.href,
-                    seller: item.shop_name || item.seller || "CSSBuy Order",
+                    seller: rawSeller || "CSSBuy Order",
                     brand: item.brand || "—",
                     category: "OTHER",
                   });
@@ -342,10 +347,61 @@ export default function AdminPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState<typeof emptyProductForm>(emptyProductForm);
   const [editLoading, setEditLoading] = useState(false);
+  const [uploadingImg, setUploadingImg] = useState(false);
 
   // Delete Modal State
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (editingProduct) closeEditModal();
+        if (deletingProduct) setDeletingProduct(null);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [editingProduct, deletingProduct]);
+
+  // Image Upload handler
+  const handleUploadImage = async (file: File, target: "edit" | "single") => {
+    if (!adminPw.trim()) {
+      addToast("error", "Inserisci la password admin prima di caricare una foto");
+      return;
+    }
+    if (!file.type.startsWith("image/")) {
+      addToast("error", "Seleziona un file immagine valido (JPG, PNG, WEBP, GIF)");
+      return;
+    }
+    setUploadingImg(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("password", adminPw.trim());
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: fd,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        addToast("error", data.error || "Errore durante il caricamento dell'immagine");
+        return;
+      }
+      if (target === "edit") {
+        setEditForm((prev) => ({ ...prev, image: data.url }));
+      } else {
+        setF((prev) => ({ ...prev, image: data.url }));
+      }
+      addToast("success", "Foto caricata con successo dal computer!");
+    } catch {
+      addToast("error", "Errore di connessione durante l'upload dell'immagine");
+    } finally {
+      setUploadingImg(false);
+    }
+  };
 
   // Fetch Products
   const loadProducts = async () => {
@@ -377,7 +433,7 @@ export default function AdminPage() {
   }, [products]);
 
   const uniqueSellers = useMemo(() => {
-    return [...new Set(products.map((p) => p.seller).filter((s) => s && s !== "—"))].sort();
+    return [...new Set(products.map((p) => p.seller).filter((s) => s && s !== "—" && s !== "-"))].sort();
   }, [products]);
 
   // Filtered & sorted product list
@@ -453,8 +509,8 @@ export default function AdminPage() {
     }
 
     const price = parseFloat(String(editForm.price).replace(",", "."));
-    if (!editForm.title.trim() || !editForm.image.trim() || isNaN(price)) {
-      addToast("error", "Titolo, immagine e prezzo valido sono obbligatori");
+    if (!editForm.title.trim() || !editForm.image.trim() || isNaN(price) || price <= 0) {
+      addToast("error", "Titolo, immagine e prezzo valido (> 0) sono obbligatori");
       return;
     }
 
@@ -462,9 +518,16 @@ export default function AdminPage() {
     try {
       const res = await fetch(`/api/products/${encodeURIComponent(editingProduct.id)}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": adminPw.trim(),
+        },
         body: JSON.stringify({
           ...editForm,
+          title: editForm.title.trim(),
+          image: editForm.image.trim(),
+          brand: editForm.brand.trim(),
+          seller: editForm.seller.trim(),
           price,
           password: adminPw.trim(),
         }),
@@ -597,8 +660,9 @@ export default function AdminPage() {
       setUrl("");
       setF(emptyProductForm);
       setReady(false);
-      // Reload products list
+      // Reload products list and switch to catalog tab
       loadProducts();
+      setTab("catalog");
     } catch {
       addToast("error", "Errore di connessione durante il salvataggio");
     } finally {
@@ -1055,7 +1119,12 @@ export default function AdminPage() {
                   }}
                   title="Ricarica prodotti dal database"
                 >
-                  <span style={{ display: "inline-block", transform: catalogLoading ? "rotate(180deg)" : "none", transition: "transform 0.5s" }}>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      animation: catalogLoading ? "spin 0.8s linear infinite" : "none",
+                    }}
+                  >
                     🔄
                   </span>
                   Ricarica
@@ -1413,34 +1482,87 @@ export default function AdminPage() {
                           <span>👤 {p.seller || "—"}</span>
                         </div>
 
-                        {/* Affiliation Status Badges */}
+                        {/* Affiliation Status Badges (Clickable) */}
                         <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-                          <span
-                            style={{
-                              fontSize: 10.5,
-                              padding: "2px 8px",
-                              borderRadius: 999,
-                              background: p.cssbuyUrl ? "rgba(34, 197, 94, 0.12)" : "rgba(255,255,255,0.05)",
-                              border: `1px solid ${p.cssbuyUrl ? "rgba(34, 197, 94, 0.3)" : "rgba(255,255,255,0.1)"}`,
-                              color: p.cssbuyUrl ? "#4ade80" : "rgba(255,255,255,0.35)",
-                              fontWeight: 600,
-                            }}
-                          >
-                            {p.cssbuyUrl ? "🛒 CSSBuy ✓" : "🛒 CSSBuy —"}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: 10.5,
-                              padding: "2px 8px",
-                              borderRadius: 999,
-                              background: p.doppelfitUrl ? "rgba(99, 102, 241, 0.12)" : "rgba(255,255,255,0.05)",
-                              border: `1px solid ${p.doppelfitUrl ? "rgba(99, 102, 241, 0.3)" : "rgba(255,255,255,0.1)"}`,
-                              color: p.doppelfitUrl ? "#a5b4fc" : "rgba(255,255,255,0.35)",
-                              fontWeight: 600,
-                            }}
-                          >
-                            {p.doppelfitUrl ? "🔍 Doppelfit ✓" : "🔍 Doppelfit —"}
-                          </span>
+                          {p.cssbuyUrl ? (
+                            <a
+                              href={p.cssbuyUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Apri link affiliato CSSBuy in nuova scheda"
+                              style={{
+                                fontSize: 10.5,
+                                padding: "2px 8px",
+                                borderRadius: 999,
+                                background: "rgba(34, 197, 94, 0.14)",
+                                border: "1px solid rgba(34, 197, 94, 0.35)",
+                                color: "#4ade80",
+                                fontWeight: 700,
+                                textDecoration: "none",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                transition: "all 0.2s",
+                              }}
+                            >
+                              <span>🛒 CSSBuy</span>
+                              <span style={{ fontSize: 9 }}>↗</span>
+                            </a>
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: 10.5,
+                                padding: "2px 8px",
+                                borderRadius: 999,
+                                background: "rgba(255,255,255,0.05)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                color: "rgba(255,255,255,0.35)",
+                                fontWeight: 600,
+                              }}
+                            >
+                              🛒 CSSBuy —
+                            </span>
+                          )}
+
+                          {p.doppelfitUrl ? (
+                            <a
+                              href={p.doppelfitUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Apri link Doppelfit in nuova scheda"
+                              style={{
+                                fontSize: 10.5,
+                                padding: "2px 8px",
+                                borderRadius: 999,
+                                background: "rgba(99, 102, 241, 0.14)",
+                                border: "1px solid rgba(99, 102, 241, 0.35)",
+                                color: "#a5b4fc",
+                                fontWeight: 700,
+                                textDecoration: "none",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                transition: "all 0.2s",
+                              }}
+                            >
+                              <span>🔍 Doppelfit</span>
+                              <span style={{ fontSize: 9 }}>↗</span>
+                            </a>
+                          ) : (
+                            <span
+                              style={{
+                                fontSize: 10.5,
+                                padding: "2px 8px",
+                                borderRadius: 999,
+                                background: "rgba(255,255,255,0.05)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                color: "rgba(255,255,255,0.35)",
+                                fontWeight: 600,
+                              }}
+                            >
+                              🔍 Doppelfit —
+                            </span>
+                          )}
                         </div>
 
                         {/* ACTIONS FOOTER */}
@@ -1727,13 +1849,13 @@ export default function AdminPage() {
 
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                      Seller
+                      Seller <span style={{ opacity: 0.6, fontWeight: 400 }}>(opzionale)</span>
                     </label>
                     <input
                       type="text"
                       value={f.seller}
                       onChange={setField("seller")}
-                      placeholder="es. Mook, Chaosmade, Yolo66..."
+                      placeholder="es. Mook, Chaosmade, Yolo66... (oppure lascia vuoto)"
                       style={inputStyle}
                     />
                   </div>
@@ -2151,13 +2273,13 @@ export default function AdminPage() {
 
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                      Seller / Negozio
+                      Seller / Negozio <span style={{ opacity: 0.6, fontWeight: 400 }}>(opzionale)</span>
                     </label>
                     <input
                       type="text"
                       value={editForm.seller}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, seller: e.target.value }))}
-                      placeholder="es. YOLO66, JMDY, Mook..."
+                      placeholder="es. YOLO66, JMDY, Mook... (oppure lascia vuoto)"
                       style={inputStyle}
                     />
                   </div>

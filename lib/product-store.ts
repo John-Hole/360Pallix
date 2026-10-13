@@ -6,6 +6,22 @@ import { formatDoppelfitLink } from "./convert";
 const FILE = path.join(process.cwd(), "data", "products.json");
 const DELETED_FILE = path.join(process.cwd(), "data", "deleted_ids.json");
 
+export function isGarbageSeller(seller?: string): boolean {
+  if (!seller) return false;
+  const s = seller.trim();
+  if (/^BBB[a-zA-Z0-9_\-]+$/i.test(s)) return true;
+  if (/^tb\d+$/i.test(s)) return true;
+  if (/^[a-zA-Z0-9_\-]{20,}$/.test(s)) return true;
+  return false;
+}
+
+export function sanitizeSeller(seller?: string): string {
+  if (!seller) return "";
+  const s = seller.trim();
+  if (s === "—" || s === "-" || isGarbageSeller(s)) return "";
+  return s;
+}
+
 export async function readDeletedIds(): Promise<Set<string>> {
   try {
     const raw = await fs.readFile(DELETED_FILE, "utf8");
@@ -72,21 +88,43 @@ export async function updateProduct(
   const existingIndex = extra.findIndex((p) => p.id === id);
   let updatedProduct: Product;
 
-  const sanitizedUpdates: Partial<Product> = { ...updates };
-  if (sanitizedUpdates.price !== undefined) {
-    const p = parseFloat(String(sanitizedUpdates.price).replace(",", "."));
-    if (!isNaN(p)) sanitizedUpdates.price = p;
+  // Strict whitelisting of allowed Product fields — NEVER allow password or arbitrary fields
+  const sanitizedUpdates: Partial<Product> = {};
+
+  if (updates.title !== undefined) sanitizedUpdates.title = String(updates.title).trim();
+  if (updates.image !== undefined) sanitizedUpdates.image = String(updates.image).trim();
+  if (updates.category !== undefined) sanitizedUpdates.category = String(updates.category).trim();
+  if (updates.brand !== undefined) sanitizedUpdates.brand = String(updates.brand).trim() || "—";
+  if (updates.seller !== undefined) sanitizedUpdates.seller = sanitizeSeller(String(updates.seller));
+
+  if (updates.price !== undefined) {
+    const p = parseFloat(String(updates.price).replace(",", "."));
+    if (!isNaN(p) && p > 0) sanitizedUpdates.price = p;
   }
-  if (sanitizedUpdates.doppelfitUrl) {
-    sanitizedUpdates.doppelfitUrl = formatDoppelfitLink(sanitizedUpdates.doppelfitUrl);
+
+  if (updates.cssbuyUrl !== undefined) {
+    const u = String(updates.cssbuyUrl).trim();
+    sanitizedUpdates.cssbuyUrl = u ? u : undefined;
+  }
+
+  if (updates.doppelfitUrl !== undefined) {
+    const u = String(updates.doppelfitUrl).trim();
+    sanitizedUpdates.doppelfitUrl = u ? formatDoppelfitLink(u) : undefined;
   }
 
   if (existingIndex !== -1) {
+    const baseItem = extra[existingIndex];
     updatedProduct = {
-      ...extra[existingIndex],
+      ...baseItem,
       ...sanitizedUpdates,
       id, // Preserve id
     };
+    if (sanitizedUpdates.cssbuyUrl === undefined && updates.cssbuyUrl !== undefined) {
+      delete updatedProduct.cssbuyUrl;
+    }
+    if (sanitizedUpdates.doppelfitUrl === undefined && updates.doppelfitUrl !== undefined) {
+      delete updatedProduct.doppelfitUrl;
+    }
     extra[existingIndex] = updatedProduct;
   } else {
     // Check if it was in BASE_PRODUCTS
@@ -99,6 +137,12 @@ export async function updateProduct(
       ...sanitizedUpdates,
       id,
     };
+    if (sanitizedUpdates.cssbuyUrl === undefined && updates.cssbuyUrl !== undefined) {
+      delete updatedProduct.cssbuyUrl;
+    }
+    if (sanitizedUpdates.doppelfitUrl === undefined && updates.doppelfitUrl !== undefined) {
+      delete updatedProduct.doppelfitUrl;
+    }
     extra.unshift(updatedProduct);
   }
 
@@ -110,11 +154,16 @@ export async function deleteProduct(id: string): Promise<boolean> {
   const extra = await readRawProducts();
   const deletedIds = await readDeletedIds();
 
+  // If already marked as deleted, it cannot be deleted again
+  if (deletedIds.has(id)) {
+    return false;
+  }
+
   const newExtra = extra.filter((p) => p.id !== id);
   const existedInExtra = newExtra.length !== extra.length;
   const existedInBase = BASE_PRODUCTS.some((p) => p.id === id);
 
-  if (!existedInExtra && !existedInBase && !deletedIds.has(id)) {
+  if (!existedInExtra && !existedInBase) {
     return false;
   }
 

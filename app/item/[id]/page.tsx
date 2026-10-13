@@ -4,6 +4,7 @@ import { PRODUCTS, eur } from "@/lib/products";
 import { getProductById } from "@/lib/product-store";
 
 export const dynamicParams = true;
+export const revalidate = 0;
 
 export function generateStaticParams() {
   return PRODUCTS.map((p) => ({ id: p.id }));
@@ -18,12 +19,23 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
     <main className="item">
       <Link href="/spreadsheet" className="back">← Spreadsheet</Link>
       <div className="item-grid">
-        <div className="item-img"><img src={p.image} alt={p.title} /></div>
+        <div className="item-img">
+          <img
+            src={p.image}
+            alt={p.title}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='500' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='16'%3EImmagine non disp.%3C/text%3E%3C/svg%3E";
+            }}
+          />
+        </div>
         <div className="item-info glass">
           <div className="eyebrow">{p.category}</div>
           <h1>{p.title}</h1>
           <div className="kv"><span>Prezzo</span><b>{eur(p.price)}</b></div>
-          <div className="kv"><span>Seller</span><b>{p.seller}</b></div>
+          {p.seller && p.seller !== "—" && p.seller !== "-" && (
+            <div className="kv"><span>Seller</span><b>{p.seller}</b></div>
+          )}
           <div className="kv"><span>Brand</span><b>{p.brand}</b></div>
           <div className="kv"><span>Categoria</span><b>{p.category}</b></div>
 

@@ -9,6 +9,7 @@ import {
   writeDeletedIds,
   updateProduct,
   deleteProduct,
+  sanitizeSeller,
 } from "@/lib/product-store";
 
 export async function GET() {
@@ -32,7 +33,10 @@ export async function POST(req: Request) {
   }
 
   const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
-  if (body.password !== expectedPw) {
+  const headerPw = req.headers.get("x-admin-password");
+  const password = body.password || headerPw || "";
+
+  if (password !== expectedPw) {
     return NextResponse.json({ error: "Password errata" }, { status: 401 });
   }
 
@@ -45,7 +49,7 @@ export async function POST(req: Request) {
     const imported: Product[] = [];
     for (const item of body.products) {
       const price = parseFloat(String(item.price).replace(",", "."));
-      if (!item.title || isNaN(price)) continue;
+      if (!item.title || isNaN(price) || price <= 0) continue;
 
       let cssbuyUrl = item.cssbuyUrl;
       if (!cssbuyUrl && item.sourceUrl) {
@@ -83,14 +87,14 @@ export async function POST(req: Request) {
 
       const p: Product = {
         id,
-        title: item.title,
-        seller: item.seller || "—",
+        title: String(item.title).trim(),
+        seller: sanitizeSeller(item.seller || item.shop_name),
         category: item.category || "OTHER",
-        brand: item.brand || "—",
+        brand: item.brand ? String(item.brand).trim() : "—",
         price,
         image: item.image || "/products/p1.jpg",
-        cssbuyUrl: cssbuyUrl || undefined,
-        doppelfitUrl: item.doppelfitUrl ? formatDoppelfitLink(item.doppelfitUrl) : undefined,
+        cssbuyUrl: cssbuyUrl ? String(cssbuyUrl).trim() : undefined,
+        doppelfitUrl: item.doppelfitUrl ? formatDoppelfitLink(String(item.doppelfitUrl).trim()) : undefined,
       };
       imported.push(p);
     }
@@ -99,7 +103,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Nessun prodotto valido trovato nella lista" }, { status: 400 });
     }
 
-    // Aggiungi in testa alla lista
     list = [...imported, ...list];
     await writeRawProducts(list);
     if (deletedModified) {
@@ -112,8 +115,8 @@ export async function POST(req: Request) {
 
   // Inserimento singolo standard
   const price = parseFloat(String(body.price).replace(",", "."));
-  if (!body.title || !body.image || isNaN(price)) {
-    return NextResponse.json({ error: "Titolo, immagine e prezzo valido sono obbligatori" }, { status: 400 });
+  if (!body.title || !body.image || isNaN(price) || price <= 0) {
+    return NextResponse.json({ error: "Titolo, immagine e prezzo valido (> 0) sono obbligatori" }, { status: 400 });
   }
 
   const slug = String(body.title)
@@ -130,14 +133,14 @@ export async function POST(req: Request) {
 
   const product: Product = {
     id,
-    title: body.title,
-    seller: body.seller || "—",
+    title: String(body.title).trim(),
+    seller: sanitizeSeller(body.seller),
     category: body.category || "OTHER",
-    brand: body.brand || "—",
+    brand: body.brand ? String(body.brand).trim() : "—",
     price,
-    image: body.image,
-    cssbuyUrl: body.cssbuyUrl || undefined,
-    doppelfitUrl: body.doppelfitUrl ? formatDoppelfitLink(body.doppelfitUrl) : undefined,
+    image: String(body.image).trim(),
+    cssbuyUrl: body.cssbuyUrl ? String(body.cssbuyUrl).trim() : undefined,
+    doppelfitUrl: body.doppelfitUrl ? formatDoppelfitLink(String(body.doppelfitUrl).trim()) : undefined,
   };
 
   list.unshift(product);
@@ -155,7 +158,10 @@ export async function PUT(req: Request) {
   }
 
   const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
-  if (body.password !== expectedPw) {
+  const headerPw = req.headers.get("x-admin-password");
+  const password = body.password || headerPw || "";
+
+  if (password !== expectedPw) {
     return NextResponse.json({ error: "Password admin errata" }, { status: 401 });
   }
 
@@ -163,7 +169,29 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "ID prodotto mancante" }, { status: 400 });
   }
 
-  const updated = await updateProduct(body.id, body);
+  const updates: Partial<Product> = {};
+  if (body.title !== undefined) updates.title = String(body.title).trim();
+  if (body.image !== undefined) updates.image = String(body.image).trim();
+  if (body.category !== undefined) updates.category = String(body.category).trim();
+  if (body.brand !== undefined) updates.brand = String(body.brand).trim();
+  if (body.seller !== undefined) updates.seller = String(body.seller).trim();
+  if (body.price !== undefined) {
+    const p = parseFloat(String(body.price).replace(",", "."));
+    if (isNaN(p) || p <= 0) {
+      return NextResponse.json({ error: "Prezzo valido (> 0) obbligatorio" }, { status: 400 });
+    }
+    updates.price = p;
+  }
+  if (body.cssbuyUrl !== undefined) {
+    const u = String(body.cssbuyUrl).trim();
+    updates.cssbuyUrl = u || undefined;
+  }
+  if (body.doppelfitUrl !== undefined) {
+    const u = String(body.doppelfitUrl).trim();
+    updates.doppelfitUrl = u ? formatDoppelfitLink(u) : undefined;
+  }
+
+  const updated = await updateProduct(body.id, updates);
   if (!updated) {
     return NextResponse.json({ error: "Prodotto non trovato per la modifica" }, { status: 404 });
   }
@@ -172,26 +200,32 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  let body: any;
+  let body: any = {};
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Corpo della richiesta JSON non valido" }, { status: 400 });
+    // Body might be empty
   }
 
   const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
-  if (body.password !== expectedPw) {
+  const headerPw = req.headers.get("x-admin-password");
+  const { searchParams } = new URL(req.url);
+  const paramPw = searchParams.get("password");
+  const password = headerPw || body.password || paramPw || "";
+
+  if (password !== expectedPw) {
     return NextResponse.json({ error: "Password admin errata" }, { status: 401 });
   }
 
-  if (!body.id) {
+  const id = body.id || searchParams.get("id");
+  if (!id) {
     return NextResponse.json({ error: "ID prodotto mancante" }, { status: 400 });
   }
 
-  const success = await deleteProduct(body.id);
+  const success = await deleteProduct(id);
   if (!success) {
     return NextResponse.json({ error: "Prodotto non trovato o già eliminato" }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true, id: body.id, message: "Prodotto eliminato con successo" });
+  return NextResponse.json({ ok: true, id, message: "Prodotto eliminato con successo" });
 }

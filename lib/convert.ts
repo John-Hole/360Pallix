@@ -119,8 +119,8 @@ export function formatDoppelfitLink(input: string): string {
   if (!raw) return "";
   const ref = process.env.DOPPELFIT_REF || "PPnCbrec";
 
-  // Se è solo l'ID dell'item (es. 5YYUD0ImPn3a4GStPWbkyA)
-  if (/^[a-zA-Z0-9_-]{20,24}$/.test(raw)) {
+  // Se è solo l'ID o lo slug dell'item (es. 5YYUD0ImPn3a4GStPWbkyA oppure x5sUY8JQ)
+  if (/^[a-zA-Z0-9_-]{4,36}$/.test(raw) && !raw.includes(".")) {
     return `https://doppel.fit/item/${raw}?ref=${encodeURIComponent(ref)}`;
   }
 
