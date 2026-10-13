@@ -5,26 +5,26 @@ export async function POST(req: Request) {
   const { url } = await req.json();
   const rawUrl = String(url || "").trim();
 
-  // Se l'utente ha inserito direttamente un link Doppelfit
-  if (rawUrl.includes("doppel.fit")) {
-    const formattedDoppel = formatDoppelfitLink(rawUrl);
-    return NextResponse.json({
-      platform: "doppelfit",
-      itemId: "",
-      sourceUrl: rawUrl,
-      cssbuyUrl: "",
-      cssbuyAffiliate: false,
-      doppelfitUrl: formattedDoppel,
-      title: "",
-      image: "",
-      price: "",
-    });
-  }
-
   const parsed = await parseSourceUrl(rawUrl);
   if (!parsed) {
+    // Se l'utente ha inserito un link generico Doppelfit non collegabile direttamente a un itemId
+    if (rawUrl.includes("doppel.fit") || rawUrl.includes("doppelfit.gg")) {
+      const formattedDoppel = formatDoppelfitLink(rawUrl);
+      return NextResponse.json({
+        platform: "doppelfit",
+        itemId: "",
+        sourceUrl: rawUrl,
+        cssbuyUrl: "",
+        cssbuyAffiliate: false,
+        doppelfitUrl: formattedDoppel,
+        title: "",
+        image: "",
+        price: "",
+      });
+    }
+
     return NextResponse.json(
-      { error: "Link non riconosciuto. Inserisci un link valido di Weidian, Taobao, 1688, CSSBuy o cssb.uy." },
+      { error: "Link non riconosciuto. Inserisci un link valido di Weidian, Taobao, 1688, CSSBuy, cssb.uy o Doppelfit." },
       { status: 400 }
     );
   }

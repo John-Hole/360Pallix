@@ -176,7 +176,7 @@ function cleanImageUrl(imgUrl) {
 
         // Assicura il link affiliato corretto
         p.cssbuyUrl = `https://www.cssbuy.com/shop/goodsDetail?promotionCode=${CSSBUY_CODE}&item-micro-${itemId}.html&id=${itemId}&type=weidian`;
-        p.doppelfitUrl = `https://doppel.fit/?ref=${DOPPEL_REF}`;
+        p.doppelfitUrl = `https://doppel.fit/item/weidian/${itemId}?ref=${DOPPEL_REF}`;
 
         if (changed) updatedCount++;
 

@@ -257,7 +257,7 @@ function detect(title) {
       price,
       image: image || (old && old.image) || '/products/p1.jpg',
       cssbuyUrl: affiliateLink(e.src),
-      doppelfitUrl: `https://doppel.fit/?ref=${DOPPEL_REF}`,
+      doppelfitUrl: `https://doppel.fit/item/${e.src.type}/${e.src.id}?ref=${DOPPEL_REF}`,
     };
     if (old) { Object.assign(old, prod); updated++; } else { products.push(prod); byKey.set(key, prod); added++; }
   }

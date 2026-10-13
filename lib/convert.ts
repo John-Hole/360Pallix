@@ -79,6 +79,22 @@ export async function parseSourceUrl(raw: string): Promise<Parsed | null> {
     }
   }
 
+  // Doppelfit (doppel.fit / doppelfit.gg)
+  if (h.includes("doppel.fit") || h.includes("doppelfit.gg")) {
+    const m = u.pathname.match(/\/item\/(weidian|taobao|1688)\/(\d+)/i);
+    if (m) {
+      const platform = (m[1].toLowerCase() === "weidian" ? "weidian" : m[1].toLowerCase() === "1688" ? "1688" : "taobao") as Platform;
+      const itemId = m[2];
+      const sourceUrl =
+        platform === "weidian"
+          ? `https://weidian.com/item.html?itemID=${itemId}`
+          : platform === "1688"
+          ? `https://detail.1688.com/offer/${itemId}.html`
+          : `https://item.taobao.com/item.htm?id=${itemId}`;
+      return { platform, itemId, sourceUrl };
+    }
+  }
+
   // Weidian
   if (h.includes("weidian.com") || h.includes("koudai.com")) {
     const id = u.searchParams.get("itemID") || u.searchParams.get("itemId");
@@ -101,6 +117,25 @@ export async function parseSourceUrl(raw: string): Promise<Parsed | null> {
 }
 
 /**
+ * Estrae piattaforma e ID da un link CSSBuy (es. item-1688-..., item-micro-..., type=...).
+ */
+export function parseCssbuyUrl(url?: string): { platform: Platform; itemId: string } | null {
+  if (!url) return null;
+  const str = String(url).trim();
+  const mType = str.match(/[?&]type=(weidian|taobao|1688)/i) || str.match(/item-(micro|taobao|1688)-/i);
+  const mId = str.match(/[?&]id=(\d+)/i) || str.match(/item-(?:micro-|1688-)?(\d+)/i);
+  if (!mId) return null;
+  let platform: Platform = "weidian";
+  if (mType) {
+    const raw = mType[1].toLowerCase();
+    if (raw === "taobao") platform = "taobao";
+    else if (raw === "1688") platform = "1688";
+    else platform = "weidian";
+  }
+  return { platform, itemId: mId[1] };
+}
+
+/**
  * Link prodotto CSSBuy con codice affiliato permanente (promotionCode).
  * Formato ufficiale identico a quello dei link verificati generati da CSSBuy.
  */
@@ -112,34 +147,87 @@ export function cssbuyLink(p: Parsed): string {
 }
 
 /**
- * Assicura che un link o ID Doppelfit contenga sempre il codice referral verificato (PPnCbrec).
+ * Link prodotto Doppelfit con piattaforma e ID, garantendo il referral verificato (PPnCbrec).
+ * Formato: https://doppel.fit/item/{platform}/{id}?ref={ref}
+ */
+export function doppelfitLink(p: Parsed | { platform: Platform; itemId: string }): string {
+  const ref = process.env.DOPPELFIT_REF || "PPnCbrec";
+  const platform = p.platform === "weidian" ? "weidian" : p.platform === "1688" ? "1688" : "taobao";
+  return `https://doppel.fit/item/${platform}/${p.itemId}?ref=${encodeURIComponent(ref)}`;
+}
+
+/**
+ * Assicura che un link o ID Doppelfit contenga sempre il codice referral verificato (PPnCbrec)
+ * e punti alla scheda corretta.
  */
 export function formatDoppelfitLink(input: string): string {
   const raw = (input || "").trim();
   if (!raw) return "";
   const ref = process.env.DOPPELFIT_REF || "PPnCbrec";
 
-  // Se è solo l'ID o lo slug dell'item (es. 5YYUD0ImPn3a4GStPWbkyA oppure x5sUY8JQ)
-  if (/^[a-zA-Z0-9_-]{4,36}$/.test(raw) && !raw.includes(".")) {
-    return `https://doppel.fit/item/${raw}?ref=${encodeURIComponent(ref)}`;
+  // Se è nel formato "platform/itemId" (es. "weidian/7176276843")
+  const slashMatch = raw.match(/^(weidian|taobao|1688)[/:_-](\d+)$/i);
+  if (slashMatch) {
+    const platform = slashMatch[1].toLowerCase() as Platform;
+    return `https://doppel.fit/item/${platform}/${slashMatch[2]}?ref=${encodeURIComponent(ref)}`;
   }
 
+  // Se è un link sorgente o CSSBuy passato direttamente
+  const parsedCss = parseCssbuyUrl(raw);
+  if (parsedCss) {
+    return doppelfitLink(parsedCss);
+  }
+
+  // Se è già un URL Doppelfit
   try {
     const u = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
-    if (u.hostname.includes("doppel.fit")) {
+    if (u.hostname.includes("doppel.fit") || u.hostname.includes("doppelfit.gg")) {
       u.searchParams.set("ref", ref);
       return u.toString();
     }
   } catch {
     // fallback
   }
+
+  // Se è solo l'ID o lo slug dell'item (es. 5YYUD0ImPn3a4GStPWbkyA oppure x5sUY8JQ)
+  if (/^[a-zA-Z0-9_-]{4,36}$/.test(raw) && !raw.includes(".")) {
+    return `https://doppel.fit/item/${raw}?ref=${encodeURIComponent(ref)}`;
+  }
+
   return raw;
 }
 
-/** Link Doppelfit di fallback configurabile */
-export function doppelfitLink(p: Parsed): string {
+/**
+ * Risolve il link Doppelfit valido per un prodotto.
+ * Se il prodotto ha solo il link generico alla homepage (https://doppel.fit/?ref=...)
+ * oppure non ha doppelfitUrl ma ha cssbuyUrl, genera il link alla scheda del prodotto.
+ */
+export function getProductDoppelfitUrl(p?: { doppelfitUrl?: string; cssbuyUrl?: string }): string | undefined {
+  if (!p) return undefined;
   const ref = process.env.DOPPELFIT_REF || "PPnCbrec";
-  return `https://doppel.fit/?ref=${encodeURIComponent(ref)}`;
+
+  // Se doppelfitUrl è già valorizzato e NON è solo la homepage
+  if (p.doppelfitUrl) {
+    const raw = p.doppelfitUrl.trim();
+    const isJustHomepage = /^https?:\/\/(?:www\.)?doppel\.fit\/?(?:\?ref=[^&]*)?$/i.test(raw);
+    if (!isJustHomepage && raw.length > 0) {
+      return formatDoppelfitLink(raw);
+    }
+  }
+
+  // Se abbiamo cssbuyUrl, generiamo il link diretto alla scheda su Doppelfit
+  if (p.cssbuyUrl) {
+    const parsed = parseCssbuyUrl(p.cssbuyUrl);
+    if (parsed) {
+      return doppelfitLink(parsed);
+    }
+  }
+
+  if (p.doppelfitUrl) {
+    return formatDoppelfitLink(p.doppelfitUrl);
+  }
+
+  return undefined;
 }
 
 const decode = (s: string) => s.replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'");

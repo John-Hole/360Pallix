@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PRODUCTS, eur } from "@/lib/products";
 import { getProductById } from "@/lib/product-store";
+import { getProductDoppelfitUrl } from "@/lib/convert";
 import ItemImage from "./ItemImage";
 
 export const dynamicParams = true;
@@ -15,6 +16,8 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
   const { id } = await params;
   const p = await getProductById(id);
   if (!p) notFound();
+
+  const doppelUrl = getProductDoppelfitUrl(p);
 
   return (
     <main className="item">
@@ -55,7 +58,7 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
                 🛒 Compra su CSSBuy
               </a>
             )}
-            {p.doppelfitUrl && (
+            {doppelUrl && (
               <a
                 className="buy"
                 style={{
@@ -69,14 +72,14 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
                   borderColor: "rgba(99, 102, 241, 0.4)",
                   boxShadow: "0 8px 24px rgba(79, 70, 229, 0.35)",
                 }}
-                href={p.doppelfitUrl}
+                href={doppelUrl}
                 target="_blank"
                 rel="noopener noreferrer sponsored"
               >
                 🔍 Visualizza su Doppelfit
               </a>
             )}
-            {!p.cssbuyUrl && !p.doppelfitUrl && (
+            {!p.cssbuyUrl && !doppelUrl && (
               <span className="buy" style={{ display: "inline-block", textAlign: "center" }}>
                 Pallix Buy
               </span>

@@ -148,6 +148,14 @@ const finalProducts = classified.map((item, idx) => {
     cssbuyUrl += (cssbuyUrl.includes('?') ? '&' : '?') + `promotionCode=${refCode}`;
   }
 
+  const mType = (cssbuyUrl || '').match(/type=(weidian|taobao|1688)/i) || (cssbuyUrl || '').match(/item-(micro|taobao|1688)-/i);
+  const mId = (cssbuyUrl || '').match(/[?&]id=(\d+)/i) || (cssbuyUrl || '').match(/item-(?:micro-|1688-)?(\d+)/i);
+  let doppelfitUrl = `https://doppel.fit/?ref=${doppelfitRef}`;
+  if (mType && mId) {
+    const pType = mType[1].toLowerCase() === 'micro' ? 'weidian' : mType[1].toLowerCase();
+    doppelfitUrl = `https://doppel.fit/item/${pType}/${mId[1]}?ref=${doppelfitRef}`;
+  }
+
   return {
     id: `${slug}-${idx + 1}`,
     title: item.title,
@@ -157,7 +165,7 @@ const finalProducts = classified.map((item, idx) => {
     price: item.price,
     image,
     cssbuyUrl,
-    doppelfitUrl: `https://doppel.fit/?ref=${doppelfitRef}`
+    doppelfitUrl
   };
 });
 

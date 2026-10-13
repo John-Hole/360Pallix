@@ -189,7 +189,7 @@ function cleanImageUrl(imgUrl) {
 
       // 4. Assicura il link affiliato completo
       p.cssbuyUrl = targetUrl;
-      p.doppelfitUrl = `https://doppel.fit/?ref=${DOPPEL_REF}`;
+      p.doppelfitUrl = `https://doppel.fit/item/${type}/${id}?ref=${DOPPEL_REF}`;
 
       if (changed) {
         updatedCount++;

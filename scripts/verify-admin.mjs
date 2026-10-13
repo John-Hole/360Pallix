@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-const PORT = 3006;
+const PORT = (process.env.PORT || "3006").trim();
 const BASE_URL = `http://localhost:${PORT}`;
 const ADMIN_PW = "cambiami";
 

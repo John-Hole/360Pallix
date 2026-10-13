@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { Product } from "@/lib/products";
-import { formatDoppelfitLink, parseSourceUrl, cssbuyLink } from "@/lib/convert";
+import { formatDoppelfitLink, parseSourceUrl, cssbuyLink, doppelfitLink, parseCssbuyUrl } from "@/lib/convert";
 import {
   getAllProducts,
   readRawProducts,
@@ -91,7 +91,11 @@ export async function POST(req: Request) {
         price,
         image: item.image || "/products/p1.jpg",
         cssbuyUrl: cssbuyUrl ? String(cssbuyUrl).trim() : undefined,
-        doppelfitUrl: item.doppelfitUrl ? formatDoppelfitLink(String(item.doppelfitUrl).trim()) : undefined,
+        doppelfitUrl: item.doppelfitUrl
+          ? formatDoppelfitLink(String(item.doppelfitUrl).trim())
+          : cssbuyUrl && parseCssbuyUrl(cssbuyUrl)
+          ? doppelfitLink(parseCssbuyUrl(cssbuyUrl)!)
+          : undefined,
       };
       imported.push(p);
     }
@@ -137,7 +141,11 @@ export async function POST(req: Request) {
     price,
     image: String(body.image).trim(),
     cssbuyUrl: body.cssbuyUrl ? String(body.cssbuyUrl).trim() : undefined,
-    doppelfitUrl: body.doppelfitUrl ? formatDoppelfitLink(String(body.doppelfitUrl).trim()) : undefined,
+    doppelfitUrl: body.doppelfitUrl
+      ? formatDoppelfitLink(String(body.doppelfitUrl).trim())
+      : body.cssbuyUrl && parseCssbuyUrl(body.cssbuyUrl)
+      ? doppelfitLink(parseCssbuyUrl(body.cssbuyUrl)!)
+      : undefined,
   };
 
   list.unshift(product);
