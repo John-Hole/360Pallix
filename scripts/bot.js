@@ -136,6 +136,22 @@ async function paginate(page, label) {
   }
 }
 
+// Scarica tutte le pagine ordini CSSBuy direttamente dall'API (sessione gia loggata)
+async function fetchAllCssOrders(page) {
+  console.log('\n▶ Scarico tutti gli ordini CSSBuy via API...');
+  for (let p = 1; p <= 30; p++) {
+    const json = await page.evaluate(async (n) => {
+      const r = await fetch('/api/v3/user/order?page=' + n + '&pageSize=10', { credentials: 'include' });
+      return r.json();
+    }, p).catch(() => null);
+    const recs = json && json.data && json.data.records;
+    if (!recs || !recs.length) break;
+    walk(json);
+    console.log('  pagina ' + p + ': ' + recs.length + ' ordini (link totali: ' + captured.size + ')');
+    if (p * 10 >= Number(json.data.total || 0)) break;
+  }
+}
+
 // ---- Arricchimento da pagina prodotto ----
 async function enrich(page, entry) {
   const { src } = entry;
@@ -183,6 +199,7 @@ function detect(title) {
     else await pg.reload().catch(() => {}); // ricarica per ricatturare la pagina 1
     await sleep(3000);
     await paginate(pg, label);
+    if (label === 'CSSBuy') await fetchAllCssOrders(pg);
   }
 
   fs.mkdirSync(OUT_DIR, { recursive: true });
@@ -237,6 +254,10 @@ function detect(title) {
     };
     if (old) { Object.assign(old, prod); updated++; } else { products.push(prod); byKey.set(key, prod); added++; }
   }
+  const capTitles = new Set(entries.map((e) => cleanTitle(e.title).toLowerCase()));
+  const before = products.length;
+  products = products.filter((p) => /item-(micro|1688|taobao)-/.test(p.cssbuyUrl || '') || !(capTitles.has(cleanTitle(p.title).toLowerCase()) || /\/products\/p\d+/.test(p.image || '')));
+  console.log('🧹 Rimossi ' + (before - products.length) + ' duplicati/segnaposto vecchi senza link.');
   fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), 'utf8');
   console.log(`\n💾 data/products.json: +${added} nuovi, ${updated} aggiornati, ${noPhoto} senza foto. Totale ${products.length}.`);
   await ctx.close();
