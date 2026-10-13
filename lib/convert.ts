@@ -57,6 +57,28 @@ export async function parseSourceUrl(raw: string): Promise<Parsed | null> {
     }
   }
 
+  // iTaoBuy (itaobuy.com)
+  if (h.includes("itaobuy.com")) {
+    const id = u.searchParams.get("id") || u.searchParams.get("goods_id") || u.searchParams.get("itemId");
+    const type = u.searchParams.get("type") || u.searchParams.get("channel");
+    let platform: Platform = "weidian";
+
+    if (type === "taobao" || type === "tb") platform = "taobao";
+    else if (type === "1688" || type === "ali") platform = "1688";
+    else if (type === "weidian" || type === "wd") platform = "weidian";
+
+    const finalId = id || uStr.match(/(?:goods|item|detail|offer)[/-](\d+)/)?.[1];
+    if (finalId) {
+      const sourceUrl =
+        platform === "weidian"
+          ? `https://weidian.com/item.html?itemID=${finalId}`
+          : platform === "1688"
+          ? `https://detail.1688.com/offer/${finalId}.html`
+          : `https://item.taobao.com/item.htm?id=${finalId}`;
+      return { platform, itemId: finalId, sourceUrl };
+    }
+  }
+
   // Weidian
   if (h.includes("weidian.com") || h.includes("koudai.com")) {
     const id = u.searchParams.get("itemID") || u.searchParams.get("itemId");
