@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PRODUCTS, eur } from "@/lib/products";
+import { PRODUCTS, eur, rmb } from "@/lib/products";
 import { getProductById } from "@/lib/product-store";
 import { getProductDoppelfitUrl } from "@/lib/convert";
 import ItemImage from "./ItemImage";
@@ -30,6 +30,7 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
           <div className="eyebrow">{p.category}</div>
           <h1>{p.title}</h1>
           <div className="kv"><span>Prezzo</span><b>{eur(p.price)}</b></div>
+          <div className="kv"><span>Prezzo originale</span><b style={{ color: "#86efac" }}>{rmb(p.priceRmb ?? p.price * 7.8)}</b></div>
           {p.seller && p.seller !== "—" && p.seller !== "-" && (
             <div className="kv"><span>Seller</span><b>{p.seller}</b></div>
           )}

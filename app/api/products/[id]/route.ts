@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getProductById, updateProduct, deleteProduct } from "@/lib/product-store";
 import { formatDoppelfitLink } from "@/lib/convert";
 import { isAuthorized } from "@/lib/auth";
@@ -9,7 +10,8 @@ interface RouteContext {
 
 export async function GET(req: Request, context: RouteContext) {
   const { id } = await context.params;
-  const product = await getProductById(id);
+  const cleanId = decodeURIComponent(id).trim();
+  const product = await getProductById(cleanId);
   if (!product) {
     return NextResponse.json({ error: "Prodotto non trovato" }, { status: 404 });
   }
@@ -20,6 +22,7 @@ export async function GET(req: Request, context: RouteContext) {
 
 export async function PUT(req: Request, context: RouteContext) {
   const { id } = await context.params;
+  const cleanId = decodeURIComponent(id).trim();
   let body: any;
   try {
     body = await req.json();
@@ -39,9 +42,10 @@ export async function PUT(req: Request, context: RouteContext) {
     );
   }
 
-  const updated = await updateProduct(id, {
+  const updated = await updateProduct(cleanId, {
     title: String(body.title).trim(),
     price,
+    priceRmb: body.priceRmb !== undefined ? parseFloat(String(body.priceRmb).replace(",", ".")) : undefined,
     image: String(body.image).trim(),
     category: body.category || "OTHER",
     brand: body.brand !== undefined ? String(body.brand).trim() : "—",
@@ -54,16 +58,24 @@ export async function PUT(req: Request, context: RouteContext) {
     return NextResponse.json({ error: "Prodotto non trovato per la modifica" }, { status: 404 });
   }
 
+  try {
+    revalidatePath("/", "layout");
+    revalidatePath("/spreadsheet");
+    revalidatePath("/admin");
+    revalidatePath(`/item/${cleanId}`);
+  } catch {}
+
   return NextResponse.json({ ok: true, product: updated });
 }
 
 export async function DELETE(req: Request, context: RouteContext) {
   const { id } = await context.params;
+  const cleanId = decodeURIComponent(id).trim();
 
   let bodyPassword = "";
   try {
     const body = await req.json();
-    bodyPassword = body.password || "";
+    bodyPassword = body?.password || "";
   } catch {}
 
   const { searchParams } = new URL(req.url);
@@ -73,10 +85,17 @@ export async function DELETE(req: Request, context: RouteContext) {
     return NextResponse.json({ error: "Accesso non autorizzato" }, { status: 401 });
   }
 
-  const success = await deleteProduct(id);
+  const success = await deleteProduct(cleanId);
   if (!success) {
     return NextResponse.json({ error: "Prodotto non trovato o già eliminato" }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true, id, message: "Prodotto eliminato con successo" });
+  try {
+    revalidatePath("/", "layout");
+    revalidatePath("/spreadsheet");
+    revalidatePath("/admin");
+    revalidatePath(`/item/${cleanId}`);
+  } catch {}
+
+  return NextResponse.json({ ok: true, id: cleanId, message: "Prodotto eliminato con successo" });
 }

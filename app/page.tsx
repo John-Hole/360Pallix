@@ -34,10 +34,10 @@ export default function Home() {
   useReveal();
 
   useEffect(() => {
-    fetch("/api/products")
+    fetch(`/api/products?t=${Date.now()}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setProductList(data);
         }
       })

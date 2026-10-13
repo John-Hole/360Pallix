@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { BASE_PRODUCTS, Product } from "./products";
+import { BASE_PRODUCTS, Product, RMB_TO_EUR } from "./products";
 import { formatDoppelfitLink } from "./convert";
 
 const FILE = path.join(process.cwd(), "data", "products.json");
@@ -62,32 +62,38 @@ export async function getAllProducts(): Promise<Product[]> {
     readDeletedIds(),
   ]);
 
-  const extraIds = new Set(extra.map((p) => p.id));
-  const baseFiltered = BASE_PRODUCTS.filter((p) => !extraIds.has(p.id));
+  const deletedNormalized = new Set([...deletedIds].map((id) => String(id).trim().toLowerCase()));
+
+  const extraIds = new Set(extra.map((p) => String(p.id).trim().toLowerCase()));
+  const baseFiltered = BASE_PRODUCTS.filter((p) => !extraIds.has(String(p.id).trim().toLowerCase()));
   const combined = [...extra, ...baseFiltered];
 
-  return combined.filter((p) => !deletedIds.has(p.id));
+  return combined.filter((p) => !deletedNormalized.has(String(p.id).trim().toLowerCase()));
 }
 
 export async function getProductById(id: string): Promise<Product | undefined> {
+  const clean = decodeURIComponent(id).trim().toLowerCase();
   const all = await getAllProducts();
-  return all.find((p) => p.id === id);
+  return all.find((p) => String(p.id).trim().toLowerCase() === clean);
 }
 
 export async function updateProduct(
   id: string,
   updates: Partial<Product>
 ): Promise<Product | null> {
+  const cleanId = decodeURIComponent(id).trim();
   const extra = await readRawProducts();
   const deletedIds = await readDeletedIds();
 
   // If was previously deleted, un-delete it
-  if (deletedIds.has(id)) {
+  if (deletedIds.has(cleanId) || deletedIds.has(id)) {
+    deletedIds.delete(cleanId);
     deletedIds.delete(id);
     await writeDeletedIds(deletedIds);
   }
 
-  const existingIndex = extra.findIndex((p) => p.id === id);
+  const normTarget = cleanId.toLowerCase();
+  const existingIndex = extra.findIndex((p) => String(p.id).trim().toLowerCase() === normTarget);
   let updatedProduct: Product;
 
   // Strict whitelisting of allowed Product fields — NEVER allow password or arbitrary fields
@@ -102,6 +108,17 @@ export async function updateProduct(
   if (updates.price !== undefined) {
     const p = parseFloat(String(updates.price).replace(",", "."));
     if (!isNaN(p) && p > 0) sanitizedUpdates.price = p;
+  }
+
+  if (updates.priceRmb !== undefined) {
+    const r = parseFloat(String(updates.priceRmb).replace(",", "."));
+    if (!isNaN(r) && r > 0) sanitizedUpdates.priceRmb = Math.round(r * 100) / 100;
+  }
+
+  if (sanitizedUpdates.price !== undefined && sanitizedUpdates.priceRmb === undefined) {
+    sanitizedUpdates.priceRmb = Math.round(sanitizedUpdates.price * RMB_TO_EUR);
+  } else if (sanitizedUpdates.priceRmb !== undefined && sanitizedUpdates.price === undefined) {
+    sanitizedUpdates.price = parseFloat((sanitizedUpdates.priceRmb / RMB_TO_EUR).toFixed(2));
   }
 
   if (updates.cssbuyUrl !== undefined) {
@@ -119,7 +136,7 @@ export async function updateProduct(
     updatedProduct = {
       ...baseItem,
       ...sanitizedUpdates,
-      id, // Preserve id
+      id: baseItem.id, // Preserve id
     };
     if (sanitizedUpdates.cssbuyUrl === undefined && updates.cssbuyUrl !== undefined) {
       delete updatedProduct.cssbuyUrl;
@@ -130,14 +147,14 @@ export async function updateProduct(
     extra[existingIndex] = updatedProduct;
   } else {
     // Check if it was in BASE_PRODUCTS
-    const baseP = BASE_PRODUCTS.find((p) => p.id === id);
+    const baseP = BASE_PRODUCTS.find((p) => String(p.id).trim().toLowerCase() === normTarget);
     if (!baseP) {
       return null;
     }
     updatedProduct = {
       ...baseP,
       ...sanitizedUpdates,
-      id,
+      id: baseP.id,
     };
     if (sanitizedUpdates.cssbuyUrl === undefined && updates.cssbuyUrl !== undefined) {
       delete updatedProduct.cssbuyUrl;
@@ -153,29 +170,44 @@ export async function updateProduct(
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
-  const extra = await readRawProducts();
-  const deletedIds = await readDeletedIds();
+  if (!id) return false;
+  const rawId = String(id).trim();
+  const cleanId = decodeURIComponent(rawId).trim();
+  const targetIds = new Set([
+    rawId,
+    cleanId,
+    rawId.toLowerCase(),
+    cleanId.toLowerCase(),
+  ]);
 
-  // If already marked as deleted, it cannot be deleted again
-  if (deletedIds.has(id)) {
-    return false;
-  }
+  const [extra, deletedIds] = await Promise.all([
+    readRawProducts(),
+    readDeletedIds(),
+  ]);
 
-  const newExtra = extra.filter((p) => p.id !== id);
-  const existedInExtra = newExtra.length !== extra.length;
-  const existedInBase = BASE_PRODUCTS.some((p) => p.id === id);
+  // Remove any matching items from extra
+  const initialLength = extra.length;
+  const newExtra = extra.filter((p) => {
+    const pid = String(p.id || "").trim();
+    return !targetIds.has(pid) && !targetIds.has(pid.toLowerCase());
+  });
+  const existedInExtra = newExtra.length !== initialLength;
 
-  if (!existedInExtra && !existedInBase) {
-    return false;
-  }
+  // Check if it exists in BASE_PRODUCTS
+  const existedInBase = BASE_PRODUCTS.some((p) => {
+    const pid = String(p.id || "").trim();
+    return targetIds.has(pid) || targetIds.has(pid.toLowerCase());
+  });
+
+  // Always register in deletedIds so it never resurfaces from BASE_PRODUCTS
+  deletedIds.add(rawId);
+  deletedIds.add(cleanId);
+  await writeDeletedIds(deletedIds);
 
   if (existedInExtra) {
     await writeRawProducts(newExtra);
   }
 
-  // Always mark in deletedIds so it never resurfaces from BASE_PRODUCTS
-  deletedIds.add(id);
-  await writeDeletedIds(deletedIds);
-
+  // Deletion is successful if it was removed from extra, existed in base, or recorded in deletedIds
   return true;
 }

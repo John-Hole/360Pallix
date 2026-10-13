@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { PRODUCTS, eur, type Product } from "@/lib/products";
+import { PRODUCTS, eur, rmb, type Product } from "@/lib/products";
 
 const uniq = (k: keyof Product, items: Product[]) =>
   [...new Set(items.map((p) => String(p[k] || "")).filter((s) => s && s !== "-" && s !== "—"))].sort();
@@ -15,6 +15,7 @@ export default function Spreadsheet() {
   const [seller, setSeller] = useState("");
   const [brand, setBrand] = useState("");
   const [cat, setCat] = useState("");
+  const [currencyMode, setCurrencyMode] = useState<"all" | "eur" | "cny">("all");
   const [favs, setFavs] = useState<string[]>([]);
   const [onlyFavs, setOnlyFavs] = useState(false);
   const [legal, setLegal] = useState(false);
@@ -25,10 +26,10 @@ export default function Spreadsheet() {
     setFavs(JSON.parse(localStorage.getItem("pallix-favs") || "[]"));
     setLegal(!localStorage.getItem("pallix-legal"));
 
-    fetch("/api/products")
+    fetch(`/api/products?t=${Date.now()}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           setAllProducts(data);
         }
       })
@@ -74,6 +75,7 @@ export default function Spreadsheet() {
     setSeller("");
     setBrand("");
     setCat("");
+    setCurrencyMode("all");
     setOnlyFavs(false);
     setPage(1);
   };
@@ -103,6 +105,15 @@ export default function Spreadsheet() {
             <option value="">Ordina</option>
             <option value="asc">Prezzo ↑</option>
             <option value="desc">Prezzo ↓</option>
+          </select>
+          <select
+            className="sel"
+            value={currencyMode}
+            onChange={(e) => setCurrencyMode(e.target.value as "all" | "eur" | "cny")}
+          >
+            <option value="all">Prezzi: € EUR + ¥ CNY</option>
+            <option value="eur">Prezzi: Solo € EUR</option>
+            <option value="cny">Prezzi: Solo ¥ CNY (Originale)</option>
           </select>
           <select className="sel" value={seller} onChange={(e) => setSeller(e.target.value)}>
             <option value="">Seller: Tutti</option>
@@ -190,7 +201,14 @@ export default function Spreadsheet() {
                     "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='370' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='14'%3EImmagine non disp.%3C/text%3E%3C/svg%3E";
                 }}
               />
-              <div className="price">{eur(p.price)}</div>
+              <div className="price">
+                <span>{currencyMode === "cny" ? rmb(p.priceRmb ?? p.price * 7.8) : eur(p.price)}</span>
+                {currencyMode === "all" && (
+                  <span className="price-rmb" title="Prezzo originale in Yuan (¥)">
+                    {rmb(p.priceRmb ?? p.price * 7.8)}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="card-body">
               <div className="card-title">{p.title}</div>

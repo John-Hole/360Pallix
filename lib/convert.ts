@@ -240,7 +240,7 @@ const meta = (html: string, prop: string) => {
 
 /** Tentativo best-effort di leggere titolo/immagine/prezzo. */
 export async function scrapeInfo(url: string) {
-  const out = { title: "", image: "", price: "" };
+  const out = { title: "", image: "", price: "", priceRmb: "" };
   try {
     const r = await fetch(url, {
       headers: { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36" },
@@ -252,7 +252,20 @@ export async function scrapeInfo(url: string) {
       out.title = "";
     }
     out.image = meta(html, "og:image");
-    out.price = meta(html, "product:price:amount") || meta(html, "og:price:amount");
+    const rawPrice = meta(html, "product:price:amount") || meta(html, "og:price:amount");
+    if (rawPrice) {
+      const pNum = parseFloat(rawPrice.replace(/[^\d.]/g, ""));
+      if (!isNaN(pNum) && pNum > 0) {
+        // Se il prezzo è in Yuan cinese (sorgente Weidian/1688/Taobao)
+        if (pNum >= 15) {
+          out.priceRmb = String(Math.round(pNum));
+          out.price = (pNum / 7.8).toFixed(2);
+        } else {
+          out.price = pNum.toFixed(2);
+          out.priceRmb = String(Math.round(pNum * 7.8));
+        }
+      }
+    }
   } catch {
     // Lascia vuoto se non reperibile
   }

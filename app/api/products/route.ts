@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { Product } from "@/lib/products";
 import { formatDoppelfitLink, parseSourceUrl, cssbuyLink, doppelfitLink, parseCssbuyUrl } from "@/lib/convert";
 import {
@@ -82,6 +83,7 @@ export async function POST(req: Request) {
         deletedModified = true;
       }
 
+      const itemPriceRmb = item.priceRmb ? parseFloat(String(item.priceRmb).replace(",", ".")) : Math.round(price * 7.8);
       const p: Product = {
         id,
         title: String(item.title).trim(),
@@ -89,6 +91,7 @@ export async function POST(req: Request) {
         category: item.category || "OTHER",
         brand: item.brand ? String(item.brand).trim() : "—",
         price,
+        priceRmb: !isNaN(itemPriceRmb) && itemPriceRmb > 0 ? itemPriceRmb : Math.round(price * 7.8),
         image: item.image || "/products/p1.jpg",
         cssbuyUrl: cssbuyUrl ? String(cssbuyUrl).trim() : undefined,
         doppelfitUrl: item.doppelfitUrl
@@ -109,6 +112,12 @@ export async function POST(req: Request) {
     if (deletedModified) {
       await writeDeletedIds(deletedIds);
     }
+
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/spreadsheet");
+      revalidatePath("/admin");
+    } catch {}
 
     const totalActive = (await getAllProducts()).length;
     return NextResponse.json({ ok: true, count: imported.length, total: totalActive });
@@ -132,6 +141,7 @@ export async function POST(req: Request) {
     await writeDeletedIds(deletedIds);
   }
 
+  const priceRmb = body.priceRmb ? parseFloat(String(body.priceRmb).replace(",", ".")) : Math.round(price * 7.8);
   const product: Product = {
     id,
     title: String(body.title).trim(),
@@ -139,6 +149,7 @@ export async function POST(req: Request) {
     category: body.category || "OTHER",
     brand: body.brand ? String(body.brand).trim() : "—",
     price,
+    priceRmb: !isNaN(priceRmb) && priceRmb > 0 ? priceRmb : Math.round(price * 7.8),
     image: String(body.image).trim(),
     cssbuyUrl: body.cssbuyUrl ? String(body.cssbuyUrl).trim() : undefined,
     doppelfitUrl: body.doppelfitUrl
@@ -150,6 +161,12 @@ export async function POST(req: Request) {
 
   list.unshift(product);
   await writeRawProducts(list);
+
+  try {
+    revalidatePath("/", "layout");
+    revalidatePath("/spreadsheet");
+    revalidatePath("/admin");
+  } catch {}
 
   return NextResponse.json({ ok: true, product });
 }
@@ -183,6 +200,12 @@ export async function PUT(req: Request) {
     }
     updates.price = p;
   }
+  if (body.priceRmb !== undefined) {
+    const r = parseFloat(String(body.priceRmb).replace(",", "."));
+    if (!isNaN(r) && r > 0) {
+      updates.priceRmb = r;
+    }
+  }
   if (body.cssbuyUrl !== undefined) {
     const u = String(body.cssbuyUrl).trim();
     updates.cssbuyUrl = u || undefined;
@@ -197,6 +220,13 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Prodotto non trovato per la modifica" }, { status: 404 });
   }
 
+  try {
+    revalidatePath("/", "layout");
+    revalidatePath("/spreadsheet");
+    revalidatePath("/admin");
+    revalidatePath(`/item/${body.id}`);
+  } catch {}
+
   return NextResponse.json({ ok: true, product: updated });
 }
 
@@ -209,21 +239,29 @@ export async function DELETE(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const paramPw = searchParams.get("password") || body.password;
+  const paramPw = searchParams.get("password") || body?.password;
 
   if (!isAuthorized(req, paramPw)) {
     return NextResponse.json({ error: "Accesso non autorizzato" }, { status: 401 });
   }
 
-  const id = body.id || searchParams.get("id");
+  const id = body?.id || searchParams.get("id");
   if (!id) {
     return NextResponse.json({ error: "ID prodotto mancante" }, { status: 400 });
   }
 
-  const success = await deleteProduct(id);
+  const cleanId = decodeURIComponent(String(id)).trim();
+  const success = await deleteProduct(cleanId);
   if (!success) {
     return NextResponse.json({ error: "Prodotto non trovato o già eliminato" }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true, id, message: "Prodotto eliminato con successo" });
+  try {
+    revalidatePath("/", "layout");
+    revalidatePath("/spreadsheet");
+    revalidatePath("/admin");
+    revalidatePath(`/item/${cleanId}`);
+  } catch {}
+
+  return NextResponse.json({ ok: true, id: cleanId, message: "Prodotto eliminato con successo" });
 }

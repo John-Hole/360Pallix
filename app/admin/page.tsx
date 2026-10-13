@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { eur, type Product } from "@/lib/products";
+import { eur, rmb, type Product } from "@/lib/products";
 
 const CATEGORIES = [
   "SNEAKERS",
@@ -18,6 +18,7 @@ const emptyProductForm = {
   title: "",
   image: "",
   price: "",
+  priceRmb: "",
   seller: "",
   brand: "",
   category: "OTHER",
@@ -221,10 +222,12 @@ export default function AdminPage() {
   // Open Edit Modal
   const openEditModal = (p: Product) => {
     setEditingProduct(p);
+    const rmbVal = p.priceRmb ?? (p.price ? Math.round(p.price * 7.8) : "");
     setEditForm({
       title: p.title || "",
       image: p.image || "",
       price: String(p.price || ""),
+      priceRmb: rmbVal ? String(rmbVal) : "",
       seller: p.seller || "",
       brand: p.brand || "",
       category: p.category || "OTHER",
@@ -249,6 +252,8 @@ export default function AdminPage() {
       return;
     }
 
+    const priceRmb = editForm.priceRmb ? parseFloat(String(editForm.priceRmb).replace(",", ".")) : Math.round(price * 7.8);
+
     setEditLoading(true);
     try {
       const res = await fetch(`/api/products/${encodeURIComponent(editingProduct.id)}`, {
@@ -265,6 +270,7 @@ export default function AdminPage() {
           brand: editForm.brand.trim(),
           seller: editForm.seller.trim(),
           price,
+          priceRmb: !isNaN(priceRmb) && priceRmb > 0 ? priceRmb : Math.round(price * 7.8),
         }),
       });
 
@@ -348,11 +354,14 @@ export default function AdminPage() {
         addToast("error", d.error || "Errore nella conversione del link");
         return;
       }
+      const pNum = parseFloat(String(d.price || "").replace(",", "."));
+      const rmbVal = !isNaN(pNum) && pNum > 0 ? String(Math.round(pNum * 7.8)) : "";
       setF({
         ...emptyProductForm,
         title: d.title || "",
         image: d.image || "",
         price: d.price || "",
+        priceRmb: rmbVal,
         cssbuyUrl: d.cssbuyUrl || "",
         doppelfitUrl: d.doppelfitUrl || "",
       });
@@ -997,9 +1006,15 @@ export default function AdminPage() {
                             backdropFilter: "blur(8px)",
                             color: "#4ade80",
                             boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 5,
                           }}
                         >
-                          {eur(p.price)}
+                          <span>{eur(p.price)}</span>
+                          <span style={{ fontSize: 10, color: "#86efac", opacity: 0.85, fontWeight: 500 }}>
+                            ¥ {p.priceRmb ?? Math.round(p.price * 7.8)}
+                          </span>
                         </div>
 
                         {/* Category badge */}
@@ -1405,17 +1420,46 @@ export default function AdminPage() {
                   />
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                      Prezzo in € * (es. 29.90)
+                      Prezzo in € (EUR) *
                     </label>
                     <input
                       required
                       type="text"
                       value={f.price}
-                      onChange={setField("price")}
-                      placeholder="29.90"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const num = parseFloat(val.replace(",", "."));
+                        setF((prev) => ({
+                          ...prev,
+                          price: val,
+                          priceRmb: !isNaN(num) && num > 0 ? String(Math.round(num * 7.8)) : prev.priceRmb,
+                        }));
+                      }}
+                      placeholder="es. 29.90"
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
+                      Prezzo originale in ¥ (CNY / RMB)
+                    </label>
+                    <input
+                      type="text"
+                      value={f.priceRmb}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const num = parseFloat(val.replace(",", "."));
+                        setF((prev) => ({
+                          ...prev,
+                          priceRmb: val,
+                          price: !isNaN(num) && num > 0 ? (num / 7.8).toFixed(2) : prev.price,
+                        }));
+                      }}
+                      placeholder="es. 233"
                       style={inputStyle}
                     />
                   </div>
@@ -1783,18 +1827,47 @@ export default function AdminPage() {
                   />
                 </div>
 
-                {/* Price & Category */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
+                {/* Price, Original Price & Category */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                      Prezzo in € * (es. 24.50)
+                      Prezzo in € (EUR) *
                     </label>
                     <input
                       required
                       type="text"
                       value={editForm.price}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, price: e.target.value }))}
-                      placeholder="24.50"
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const num = parseFloat(val.replace(",", "."));
+                        setEditForm((prev) => ({
+                          ...prev,
+                          price: val,
+                          priceRmb: !isNaN(num) && num > 0 ? String(Math.round(num * 7.8)) : prev.priceRmb,
+                        }));
+                      }}
+                      placeholder="es. 24.50"
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
+                      Prezzo originale in ¥ (CNY / RMB)
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.priceRmb}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const num = parseFloat(val.replace(",", "."));
+                        setEditForm((prev) => ({
+                          ...prev,
+                          priceRmb: val,
+                          price: !isNaN(num) && num > 0 ? (num / 7.8).toFixed(2) : prev.price,
+                        }));
+                      }}
+                      placeholder="es. 190"
                       style={inputStyle}
                     />
                   </div>
