@@ -16,7 +16,6 @@ export default function Spreadsheet() {
   const [seller, setSeller] = useState("");
   const [brand, setBrand] = useState("");
   const [cat, setCat] = useState("");
-  const [currencyMode, setCurrencyMode] = useState<"all" | "eur" | "cny">("all");
   const [favs, setFavs] = useState<string[]>([]);
   const [onlyFavs, setOnlyFavs] = useState(false);
   const [legal, setLegal] = useState(false);
@@ -26,11 +25,6 @@ export default function Spreadsheet() {
   useEffect(() => {
     setFavs(JSON.parse(localStorage.getItem("pallix-favs") || "[]"));
     setLegal(!localStorage.getItem("pallix-legal"));
-
-    const savedMode = localStorage.getItem("pallix-currency-mode") as "all" | "eur" | "cny" | null;
-    if (savedMode && ["all", "eur", "cny"].includes(savedMode)) {
-      setCurrencyMode(savedMode);
-    }
 
     fetch(`/api/products?t=${Date.now()}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -48,13 +42,6 @@ export default function Spreadsheet() {
     localStorage.setItem("pallix-favs", JSON.stringify(n));
   };
 
-  const handleCurrencyModeChange = (mode: "all" | "eur" | "cny") => {
-    setCurrencyMode(mode);
-    try {
-      localStorage.setItem("pallix-currency-mode", mode);
-    } catch {}
-  };
-
   const list = useMemo(() => {
     let l = allProducts.filter(
       (p) =>
@@ -65,21 +52,13 @@ export default function Spreadsheet() {
         (!onlyFavs || favs.includes(p.id))
     );
     if (order === "asc") {
-      l = [...l].sort((a, b) =>
-        currencyMode === "cny"
-          ? (a.priceRmb ?? a.price * RMB_TO_EUR) - (b.priceRmb ?? b.price * RMB_TO_EUR)
-          : a.price - b.price
-      );
+      l = [...l].sort((a, b) => a.price - b.price);
     }
     if (order === "desc") {
-      l = [...l].sort((a, b) =>
-        currencyMode === "cny"
-          ? (b.priceRmb ?? b.price * RMB_TO_EUR) - (a.priceRmb ?? a.price * RMB_TO_EUR)
-          : b.price - a.price
-      );
+      l = [...l].sort((a, b) => b.price - a.price);
     }
     return l;
-  }, [allProducts, q, order, seller, brand, cat, onlyFavs, favs, currencyMode]);
+  }, [allProducts, q, order, seller, brand, cat, onlyFavs, favs]);
 
   const pages = Math.max(1, Math.ceil(list.length / perPage));
   const cur = Math.min(page, pages);
@@ -92,7 +71,7 @@ export default function Spreadsheet() {
   // back to page 1 whenever filters change
   useEffect(() => {
     setPage(1);
-  }, [q, order, seller, brand, cat, onlyFavs, currencyMode]);
+  }, [q, order, seller, brand, cat, onlyFavs]);
 
   const reset = () => {
     setQ("");
@@ -100,10 +79,6 @@ export default function Spreadsheet() {
     setSeller("");
     setBrand("");
     setCat("");
-    setCurrencyMode("all");
-    try {
-      localStorage.setItem("pallix-currency-mode", "all");
-    } catch {}
     setOnlyFavs(false);
     setPage(1);
   };
@@ -133,15 +108,6 @@ export default function Spreadsheet() {
             <option value="">Ordina</option>
             <option value="asc">Prezzo ↑</option>
             <option value="desc">Prezzo ↓</option>
-          </select>
-          <select
-            className="sel"
-            value={currencyMode}
-            onChange={(e) => handleCurrencyModeChange(e.target.value as "all" | "eur" | "cny")}
-          >
-            <option value="all">Prezzi: € EUR + ¥ CNY</option>
-            <option value="eur">Prezzi: Solo € EUR</option>
-            <option value="cny">Prezzi: Solo ¥ CNY (Originale)</option>
           </select>
           <select className="sel" value={seller} onChange={(e) => setSeller(e.target.value)}>
             <option value="">Seller: Tutti</option>
@@ -233,12 +199,10 @@ export default function Spreadsheet() {
                 }}
               />
               <div className="price">
-                <span>{currencyMode === "cny" ? rmb(p.priceRmb ?? p.price * RMB_TO_EUR) : eur(p.price)}</span>
-                {currencyMode === "all" && (
-                  <span className="price-rmb" title="Prezzo originale in Yuan (¥)">
-                    {rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}
-                  </span>
-                )}
+                <span>{eur(p.price)}</span>
+                <span className="price-rmb" title="Prezzo originale in Yuan (¥)">
+                  {rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}
+                </span>
               </div>
             </div>
             <div className="card-body">
