@@ -1,15 +1,17 @@
 /**
  * =========================================================================
- * 360PALLIX - AUTO-SCRAPER INTELLIGENTE & PRICE VERIFIER
+ * 360PALLIX - AUTO-SCRAPER PRO VIA CSSBUY CONVERTER
  * =========================================================================
- * Funzionalità:
- * 1. Usa il profilo persistente (.bot-profile) in modalità browser reale.
- * 2. Scorre tutti i prodotti in data/products.json.
- * 3. Apre ciascun link Weidian / 1688 / Taobao.
- * 4. Legge il prezzo reale originale in Yuan (¥) o Euro e lo aggiorna.
- * 5. Verifica e cattura le foto originali ad altissima risoluzione (HD).
- * 6. Ripulisce e perfeziona i titoli e i venditori.
- * 7. Salva progressivamente in data/products.json senza perdere nulla.
+ * Questo script:
+ * 1. Apre il browser reale con il profilo già loggato (.bot-profile).
+ * 2. Visita direttamente la scheda convertita di CSSBuy per ogni prodotto:
+ *    https://www.cssbuy.com/shop/goodsDetail?item-{type}-{id}.html&id={id}&type={type}
+ * 3. CSSBuy fa da proxy verso Weidian, 1688 e Taobao:
+ *    - div.product_name: contiene il VERO titolo in inglese/pulito
+ *    - Prezzo in Yuan (¥) e Dollari ($) reale
+ *    - Immagini originali in alta risoluzione (HD)
+ * 4. Calcola il prezzo convertito in Euro (¥ / 7.8).
+ * 5. Salva progressivamente in data/products.json.
  * =========================================================================
  */
 
@@ -19,6 +21,8 @@ const path = require('path');
 
 const PRODUCTS_FILE = path.join(__dirname, '..', 'data', 'products.json');
 const PROFILE_DIR = path.join(__dirname, '..', '.bot-profile');
+const CSSBUY_CODE = process.env.CSSBUY_PROMOTION_CODE || '2ab90a34eeaa437b';
+const DOPPEL_REF = process.env.DOPPELFIT_REF || 'PPnCbrec';
 const RMB_TO_EUR = 7.8;
 const USD_TO_EUR = 0.92;
 
@@ -47,13 +51,13 @@ function cleanImageUrl(imgUrl) {
 
 (async () => {
   console.log('===============================================================');
-  console.log('🤖 360PALLIX - AUTO-SCRAPER PREZZI & FOTO HD IN BACKGROUND');
+  console.log('🤖 360PALLIX - AUTO-SCRAPER PREZZI & FOTO HD VIA CSSBUY');
   console.log('===============================================================');
-  console.log('Avvio del browser reale con profilo utente...');
+  console.log('Avvio del browser reale con profilo persistente...');
 
   const ctx = await chromium.launchPersistentContext(PROFILE_DIR, {
     headless: false,
-    viewport: { width: 1300, height: 850 }
+    viewport: { width: 1350, height: 900 }
   });
 
   const page = ctx.pages()[0] || (await ctx.newPage());
@@ -67,115 +71,121 @@ function cleanImageUrl(imgUrl) {
     const p = products[i];
     const u = p.cssbuyUrl || '';
 
-    // Estrai ID e Tipo
+    // Estrai Tipo e ID del prodotto
+    let type = 'weidian';
+    let id = null;
+
     const m = u.match(/item-(micro|1688|taobao)-(\d+)/i) || u.match(/id=(\d+)/i);
     const typeMatch = u.match(/type=(weidian|1688|taobao)/i);
-    const type = (m && m[1] === 'micro' ? 'weidian' : (m && m[1])) || (typeMatch && typeMatch[1]) || 'weidian';
-    const id = m ? m[2] || m[1] : null;
-
-    if (!id) continue;
-
-    let targetUrl = '';
-    if (type === 'weidian') {
-      targetUrl = `https://weidian.com/item.html?itemID=${id}`;
-    } else if (type === '1688') {
-      targetUrl = `https://detail.1688.com/offer/${id}.html`;
-    } else if (type === 'taobao') {
-      targetUrl = `https://item.taobao.com/item.htm?id=${id}`;
+    if (m) {
+      type = (m[1] === 'micro' ? 'weidian' : m[1]) || (typeMatch && typeMatch[1]) || 'weidian';
+      id = m[2] || m[1];
     }
 
-    console.log(`[${i + 1}/${products.length}] 🔍 [${type.toUpperCase()}] #${id}: ${p.title.slice(0, 35)}... (Prezzo attuale: €${p.price})`);
+    if (!id) {
+      console.log(`[${i + 1}/${products.length}] ⏭️  ${p.title.slice(0, 30)} (nessun ID trovato, salto)`);
+      continue;
+    }
+
+    const itemSlug = type === 'weidian' ? 'micro' : type;
+    const targetUrl = `https://www.cssbuy.com/shop/goodsDetail?promotionCode=${CSSBUY_CODE}&item-${itemSlug}-${id}.html&id=${id}&type=${type}`;
+
+    console.log(`[${i + 1}/${products.length}] 🌐 [${type.toUpperCase()}] #${id}: ${p.title.slice(0, 35)}...`);
 
     try {
-      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 12000 });
-      await sleep(1500);
+      await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+      await sleep(2500);
 
-      const pageTitle = await page.title();
+      // Estrai Titolo da CSSBuy
+      const scrapedData = await page.evaluate(() => {
+        // Cerca il nome del prodotto
+        const nameEl = document.querySelector('.product_name, .goods_name, [class*="product_name"], [class*="productName"]');
+        let title = nameEl ? nameEl.innerText.trim() : '';
 
-      // Controllo se c'è un captcha o login wall
-      if (/Just a moment|Cloudflare|验证码|Login/i.test(pageTitle) && !pageTitle.includes('Weidian')) {
-        console.log(`  ⚠️ Richiesta verifica/captcha, provo fallback CSSBuy...`);
-        // Prova ad aprire direttamente la scheda su CSSBuy
-        const cssUrl = `https://www.cssbuy.com/shop/goodsDetail?item-${type === 'weidian' ? 'micro' : type}-${id}.html&id=${id}&type=${type}`;
-        await page.goto(cssUrl, { waitUntil: 'domcontentloaded', timeout: 12000 });
-        await sleep(2500);
-      }
+        // Cerca il prezzo
+        const bodyText = document.body.innerText;
+        let rmb = null;
+        let usd = null;
 
-      // Estrai Prezzo
-      const scrapedPrice = await page.evaluate(() => {
-        const body = document.body.innerText;
-        // Cerca pattern tipo: ¥ 120, ￥120, $15.50, 120 起
-        const rmbMatch = body.match(/(?:￥|¥)\s*([\d.]+)/) || body.match(/([\d.]+)\s*(?:元|起\s*¥)/);
-        const usdMatch = body.match(/\$\s*([\d.]+)/);
-        const eurMatch = body.match(/€\s*([\d.]+)/);
+        const rmbMatch = bodyText.match(/(?:￥|¥)\s*([\d.]+)/) || bodyText.match(/([\d.]+)\s*CNY/i);
+        const usdMatch = bodyText.match(/\$\s*([\d.]+)/) || bodyText.match(/([\d.]+)\s*USD/i);
 
-        if (eurMatch) return { val: parseFloat(eurMatch[1]), curr: 'EUR' };
-        if (rmbMatch) return { val: parseFloat(rmbMatch[1]), curr: 'RMB' };
-        if (usdMatch) return { val: parseFloat(usdMatch[1]), curr: 'USD' };
-        return null;
+        if (rmbMatch) rmb = parseFloat(rmbMatch[1]);
+        if (usdMatch) usd = parseFloat(usdMatch[1]);
+
+        // Cerca foto HD del prodotto (esclude avatar, loghi, icone)
+        const imgs = Array.from(document.querySelectorAll('img'))
+          .map(img => img.currentSrc || img.src)
+          .filter(src => src && (src.includes('geilicdn') || src.includes('alicdn') || src.includes('cssbuy') || src.includes('upload')) && !src.includes('avatar') && !src.includes('logo') && !src.includes('icon') && !src.includes('brand.svg'));
+
+        return {
+          title,
+          rmb,
+          usd,
+          images: imgs.slice(0, 5)
+        };
       });
 
       let changed = false;
 
-      if (scrapedPrice && scrapedPrice.val > 0) {
-        let newEurPrice = p.price;
-        if (scrapedPrice.curr === 'RMB' && scrapedPrice.val > 0 && scrapedPrice.val < 10000) {
-          newEurPrice = parseFloat((scrapedPrice.val / RMB_TO_EUR).toFixed(2));
-        } else if (scrapedPrice.curr === 'USD') {
-          newEurPrice = parseFloat((scrapedPrice.val * USD_TO_EUR).toFixed(2));
-        } else if (scrapedPrice.curr === 'EUR') {
-          newEurPrice = scrapedPrice.val;
-        }
-
-        if (newEurPrice > 0 && (p.price === 19.99 || Math.abs(p.price - newEurPrice) > 0.01)) {
-          console.log(`  💰 Prezzo aggiornato: €${p.price} -> €${newEurPrice}`);
-          p.price = newEurPrice;
-          changed = true;
-        }
-      }
-
-      // Estrai Foto HD se migliore
-      const imgs = await page.$$eval('img', els => els.map(e => e.currentSrc || e.src).filter(s => s && (s.includes('geilicdn') || s.includes('alicdn')) && !s.includes('avatar') && !s.includes('logo') && !s.includes('icon')));
-      const bestImg = imgs.find(img => img.includes('1200') || img.includes('800') || img.includes('750') || img.includes('pcitem') || img.includes('open') || img.includes('wdseller') || img.includes('ibank')) || imgs[0];
-
-      if (bestImg) {
-        const clean = cleanImageUrl(bestImg);
-        if (clean && clean !== p.image && (!p.image || p.image.includes('/products/p') || p.image.includes('commonImage') || clean.includes('1200') || clean.includes('800'))) {
-          console.log(`  📸 Foto HD aggiornata: ${clean.slice(0, 55)}...`);
-          p.image = clean;
-          changed = true;
-        }
-      }
-
-      // Estrai Titolo pulito se quello attuale è troppo corto o generico
-      const cleanT = cleanTitle(pageTitle);
-      if (cleanT && cleanT.length > 5 && !/Weidian|Taobao|1688|CSSBuy|Login/i.test(cleanT)) {
-        if (!p.title || p.title.length < 8 || p.title.startsWith('-') || /white|black/i.test(p.title)) {
-          console.log(`  🏷️ Titolo perfezionato: ${cleanT.slice(0, 45)}`);
+      // 1. Aggiorna Titolo se migliore o più completo
+      const cleanT = cleanTitle(scrapedData.title);
+      if (cleanT && cleanT.length > 5 && !cleanT.includes('Beijing Time') && cleanT !== p.title) {
+        if (!p.title || p.title.length < 8 || p.title.startsWith('-') || /white|black/i.test(p.title) || p.title.includes('Item')) {
+          console.log(`  🏷️  Nuovo Titolo: ${cleanT.slice(0, 45)}`);
           p.title = cleanT;
           changed = true;
         }
       }
 
+      // 2. Aggiorna Prezzo
+      let calculatedPrice = null;
+      if (scrapedData.rmb && scrapedData.rmb > 0 && scrapedData.rmb < 15000) {
+        calculatedPrice = parseFloat((scrapedData.rmb / RMB_TO_EUR).toFixed(2));
+      } else if (scrapedData.usd && scrapedData.usd > 0) {
+        calculatedPrice = parseFloat((scrapedData.usd * USD_TO_EUR).toFixed(2));
+      }
+
+      if (calculatedPrice && calculatedPrice > 0) {
+        if (p.price === 19.99 || Math.abs(p.price - calculatedPrice) > 1.5) {
+          console.log(`  💰 Prezzo aggiornato: €${p.price} -> €${calculatedPrice} (da ¥${scrapedData.rmb || '—'} / $${scrapedData.usd || '—'})`);
+          p.price = calculatedPrice;
+          changed = true;
+        }
+      }
+
+      // 3. Aggiorna Foto HD se trovata
+      if (scrapedData.images && scrapedData.images.length > 0) {
+        const bestImg = scrapedData.images.find(s => s.includes('1200') || s.includes('800') || s.includes('750') || s.includes('pcitem') || s.includes('open') || s.includes('wdseller') || s.includes('ibank')) || scrapedData.images[0];
+        const cleanImg = cleanImageUrl(bestImg);
+        if (cleanImg && cleanImg !== p.image && (!p.image || p.image.includes('/products/p') || p.image.includes('commonImage'))) {
+          console.log(`  📸 Nuova Foto HD: ${cleanImg.slice(0, 50)}...`);
+          p.image = cleanImg;
+          changed = true;
+        }
+      }
+
+      // 4. Assicura il link affiliato completo
+      p.cssbuyUrl = targetUrl;
+      p.doppelfitUrl = `https://doppel.fit/?ref=${DOPPEL_REF}`;
+
       if (changed) {
         updatedCount++;
-        // Salva incrementalmente
         fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), 'utf8');
       }
 
     } catch (e) {
-      console.log(`  ⚠️ Salto (${e.message.split('\n')[0]})`);
+      console.log(`  ⚠️ Errore su #${id}: ${e.message.split('\n')[0]}`);
     }
 
-    await sleep(800);
+    await sleep(600);
   }
 
   await ctx.close();
 
-  // Salvataggio finale
   fs.writeFileSync(PRODUCTS_FILE, JSON.stringify(products, null, 2), 'utf8');
   console.log('\n===============================================================');
-  console.log(`🎉 Auto-Scraping completato! Aggiornati ${updatedCount} prodotti con prezzi e foto HD.`);
-  console.log('💾 File data/products.json salvato con successo!');
+  console.log(`🎉 Scraping completato! Aggiornati ${updatedCount} prodotti con successo.`);
+  console.log('💾 File data/products.json salvato!');
   console.log('===============================================================');
 })();
