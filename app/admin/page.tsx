@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
-import ExchangeRateWidget from "@/components/ExchangeRateWidget";
 
 const CATEGORIES = [
   "SNEAKERS",
@@ -1422,10 +1421,6 @@ export default function AdminPage() {
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
-                  <div style={{ gridColumn: "1 / -1", margin: "4px 0" }}>
-                    <ExchangeRateWidget compact={false} />
-                  </div>
-
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
                       Prezzo in € (EUR) *
@@ -1834,10 +1829,6 @@ export default function AdminPage() {
 
                 {/* Price, Original Price & Category */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
-                  <div style={{ gridColumn: "1 / -1", margin: "4px 0" }}>
-                    <ExchangeRateWidget compact={false} />
-                  </div>
-
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
                       Prezzo in € (EUR) *

@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PRODUCTS, eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
-import ExchangeRateWidget from "@/components/ExchangeRateWidget";
 
 const PILLS = [
   { label: "Spreadsheet", href: "/spreadsheet", x: "min(26vw, 380px)", y: "-24vh", d: "0s" },
@@ -76,10 +75,7 @@ export default function Home() {
       <section className="section" id="spreadsheet">
         <div className="wrap">
           <h2 className="sec-title reveal">Spreadsheet</h2>
-          <div className="reveal" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-            <Link className="cta" href="/spreadsheet">Entra nella Spreadsheet →</Link>
-            <ExchangeRateWidget compact={false} />
-          </div>
+          <div className="reveal"><Link className="cta" href="/spreadsheet">Entra nella Spreadsheet →</Link></div>
           <div className="rail reveal">
             <div className="rail-scroll" ref={rail}>
               <div className="rail-track">

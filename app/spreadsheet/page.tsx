@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { PRODUCTS, eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
-import ExchangeRateWidget from "@/components/ExchangeRateWidget";
 
 const uniq = (k: keyof Product, items: Product[]) =>
   [...new Set(items.map((p) => String(p[k] || "")).filter((s) => s && s !== "-" && s !== "—"))].sort();
@@ -130,9 +129,6 @@ export default function Spreadsheet() {
           <button className="reset" onClick={reset}>
             Reset
           </button>
-        </div>
-        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", margin: "14px 0 4px" }}>
-          <ExchangeRateWidget />
         </div>
         <div className="sheet-sub">
           <span className="stat">

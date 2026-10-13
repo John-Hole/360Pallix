@@ -4,7 +4,6 @@ import { PRODUCTS, eur, rmb, RMB_TO_EUR } from "@/lib/products";
 import { getProductById } from "@/lib/product-store";
 import { getProductDoppelfitUrl } from "@/lib/convert";
 import ItemImage from "./ItemImage";
-import ExchangeRateWidget from "@/components/ExchangeRateWidget";
 
 export const dynamicParams = true;
 export const revalidate = 0;
@@ -37,10 +36,6 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
           )}
           <div className="kv"><span>Brand</span><b>{p.brand}</b></div>
           <div className="kv"><span>Categoria</span><b>{p.category}</b></div>
-
-          <div style={{ marginTop: 18, marginBottom: 8 }}>
-            <ExchangeRateWidget defaultEur={p.price} interactive={true} />
-          </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24 }}>
             {p.cssbuyUrl && (

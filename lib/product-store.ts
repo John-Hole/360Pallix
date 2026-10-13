@@ -198,20 +198,44 @@ export async function deleteProduct(id: string): Promise<boolean> {
     readDeletedIds(),
   ]);
 
-  // Remove any matching items from extra
-  const newExtra = extra.filter((p) => {
+  // Check if it was already deleted
+  let alreadyDeleted = false;
+  for (const tid of targetIds) {
+    if (deletedIds.has(tid)) {
+      alreadyDeleted = true;
+      break;
+    }
+  }
+
+  const matchFn = (p: Product) => {
     const pid = String(p.id || "").trim();
     let pidDecoded = pid;
     try {
       pidDecoded = decodeURIComponent(pid).trim();
     } catch {}
     return (
-      !targetIds.has(pid) &&
-      !targetIds.has(pid.toLowerCase()) &&
-      !targetIds.has(pidDecoded) &&
-      !targetIds.has(pidDecoded.toLowerCase())
+      targetIds.has(pid) ||
+      targetIds.has(pid.toLowerCase()) ||
+      targetIds.has(pidDecoded) ||
+      targetIds.has(pidDecoded.toLowerCase())
     );
-  });
+  };
+
+  const wasInExtra = extra.some(matchFn);
+  const wasInBase = BASE_PRODUCTS.some(matchFn);
+
+  // If already deleted and not in extra, return false (already deleted)
+  if (alreadyDeleted && !wasInExtra) {
+    return false;
+  }
+
+  // If not found in extra or base, return false
+  if (!wasInExtra && !wasInBase) {
+    return false;
+  }
+
+  // Remove any matching items from extra
+  const newExtra = extra.filter((p) => !matchFn(p));
 
   // Always register in deletedIds so it never resurfaces from BASE_PRODUCTS
   for (const tid of targetIds) {

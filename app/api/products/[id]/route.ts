@@ -76,19 +76,29 @@ export async function DELETE(req: Request, context: RouteContext) {
   const cleanId = decodeURIComponent(id).trim();
 
   let bodyPassword = "";
+  let bodyId = "";
   try {
-    const body = await req.json();
-    bodyPassword = body?.password || "";
+    const text = await req.text();
+    if (text) {
+      const body = JSON.parse(text);
+      bodyPassword = body?.password || "";
+      bodyId = body?.id || "";
+    }
   } catch {}
 
   const { searchParams } = new URL(req.url);
   const paramPw = searchParams.get("password") || bodyPassword;
+  const targetId = cleanId || searchParams.get("id") || bodyId;
 
   if (!isAuthorized(req, paramPw)) {
     return NextResponse.json({ error: "Accesso non autorizzato" }, { status: 401 });
   }
 
-  const success = await deleteProduct(cleanId);
+  if (!targetId) {
+    return NextResponse.json({ error: "ID prodotto mancante" }, { status: 400 });
+  }
+
+  const success = await deleteProduct(targetId);
   if (!success) {
     return NextResponse.json({ error: "Prodotto non trovato o già eliminato" }, { status: 404 });
   }

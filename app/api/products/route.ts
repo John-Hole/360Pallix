@@ -249,7 +249,10 @@ export async function PUT(req: Request) {
 export async function DELETE(req: Request) {
   let body: any = {};
   try {
-    body = await req.json();
+    const text = await req.text();
+    if (text) {
+      body = JSON.parse(text);
+    }
   } catch {
     // Body might be empty
   }
