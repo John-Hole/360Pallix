@@ -94,7 +94,29 @@ function cleanImageUrl(imgUrl) {
 
     try {
       await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-      await sleep(2500);
+      await sleep(1500);
+
+      // 🛡️ Auto-Click su "I accept the risks" o qualsiasi tastino di avviso CSSBuy
+      await page.evaluate(() => {
+        const candidates = Array.from(document.querySelectorAll('div, button, a, span'))
+          .filter(el => {
+            const t = el.innerText.trim().toLowerCase();
+            return (
+              t.includes('accept the risks') ||
+              t.includes('i accept') ||
+              t.includes('understood') ||
+              t.includes('understand') ||
+              t === 'confirm' ||
+              t === 'agree' ||
+              t === '确定' ||
+              t === '我知道了'
+            );
+          });
+        if (candidates.length > 0) {
+          candidates[0].click();
+        }
+      });
+      await sleep(1500);
 
       // Estrai Titolo da CSSBuy
       const scrapedData = await page.evaluate(() => {
