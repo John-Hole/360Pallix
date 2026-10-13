@@ -6,6 +6,9 @@
     "dev": "next dev --webpack -p 3000",
     "build": "next build --webpack",
     "start": "next start -p 3000",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/test-prices.js",
+    "sync-prices": "node scripts/sync-original-prices.js",
     "bot": "node scripts/bot.js",
     "scrape": "node scripts/auto-scraper.js"
   },
@@ -18,4 +21,3 @@
     "typescript": "^7.0.2"
   }
 }
-
