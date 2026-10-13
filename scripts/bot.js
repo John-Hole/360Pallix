@@ -100,6 +100,7 @@ function attachListener(page) {
     // Solo endpoint dei TUOI ordini (esclude carrello, prodotti consigliati, acquisti di altri utenti)
     if (!/(\/user\/order|getUserOrderDetail|order\/front\/order|orderList|OrderPage)/i.test(url)) return;
     if (/(cart|spuProduct|pageList|statistics|buyReport|realTime)/i.test(url)) return;
+    if (/cssbuy\.com\/api\/v3\/user\/order/.test(url)) global.cssHeaders = res.request().headers();
     const ct = (res.headers()['content-type'] || '');
     if (!ct.includes('json')) return;
     try {
@@ -140,10 +141,16 @@ async function paginate(page, label) {
 async function fetchAllCssOrders(page) {
   console.log('\n▶ Scarico tutti gli ordini CSSBuy via API...');
   for (let p = 1; p <= 30; p++) {
-    const json = await page.evaluate(async (n) => {
-      const r = await fetch('/api/v3/user/order?page=' + n + '&pageSize=10', { credentials: 'include' });
+    const json = await page.evaluate(async ([n, hdrs]) => {
+      const clean = {};
+      for (const [k, v] of Object.entries(hdrs || {})) {
+        if (/^(host|cookie|content-length|connection|accept-encoding|referer|origin|user-agent|sec-|:)/i.test(k)) continue;
+        clean[k] = v;
+      }
+      const r = await fetch('/api/v3/user/order?page=' + n + '&pageSize=10', { credentials: 'include', headers: clean });
       return r.json();
-    }, p).catch(() => null);
+    }, [p, global.cssHeaders]).catch((e) => { console.log('  ⚠️ fetch fallita: ' + e.message.split('\n')[0]); return null; });
+    if (p === 1) console.log('  risposta pagina 1:', JSON.stringify(json).slice(0, 200));
     const recs = json && json.data && json.data.records;
     if (!recs || !recs.length) break;
     walk(json);
