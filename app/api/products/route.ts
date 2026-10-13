@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { Product } from "@/lib/products";
+import { Product, syncInMemoryProducts } from "@/lib/products";
 import { formatDoppelfitLink, parseSourceUrl, cssbuyLink, doppelfitLink, parseCssbuyUrl } from "@/lib/convert";
 import {
   getAllProducts,
@@ -14,11 +14,17 @@ import {
 } from "@/lib/product-store";
 import { isAuthorized } from "@/lib/auth";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export async function GET(req: Request) {
   try {
     const list = await getAllProducts();
     return NextResponse.json(list, {
-      headers: { "Cache-Control": "no-store, max-age=0" },
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+      },
     });
   } catch (error) {
     console.error("Errore lettura prodotti:", error);
@@ -114,6 +120,11 @@ export async function POST(req: Request) {
     }
 
     try {
+      const all = await getAllProducts();
+      syncInMemoryProducts(all);
+    } catch {}
+
+    try {
       revalidatePath("/", "layout");
       revalidatePath("/spreadsheet");
       revalidatePath("/admin");
@@ -161,6 +172,11 @@ export async function POST(req: Request) {
 
   list.unshift(product);
   await writeRawProducts(list);
+
+  try {
+    const all = await getAllProducts();
+    syncInMemoryProducts(all);
+  } catch {}
 
   try {
     revalidatePath("/", "layout");

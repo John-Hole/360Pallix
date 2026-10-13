@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { PRODUCTS, eur, rmb, type Product } from "@/lib/products";
+import { PRODUCTS, eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
+import ExchangeRateWidget from "@/components/ExchangeRateWidget";
 
 const uniq = (k: keyof Product, items: Product[]) =>
   [...new Set(items.map((p) => String(p[k] || "")).filter((s) => s && s !== "-" && s !== "—"))].sort();
@@ -66,14 +67,14 @@ export default function Spreadsheet() {
     if (order === "asc") {
       l = [...l].sort((a, b) =>
         currencyMode === "cny"
-          ? (a.priceRmb ?? a.price * 7.8) - (b.priceRmb ?? b.price * 7.8)
+          ? (a.priceRmb ?? a.price * RMB_TO_EUR) - (b.priceRmb ?? b.price * RMB_TO_EUR)
           : a.price - b.price
       );
     }
     if (order === "desc") {
       l = [...l].sort((a, b) =>
         currencyMode === "cny"
-          ? (b.priceRmb ?? b.price * 7.8) - (a.priceRmb ?? a.price * 7.8)
+          ? (b.priceRmb ?? b.price * RMB_TO_EUR) - (a.priceRmb ?? a.price * RMB_TO_EUR)
           : b.price - a.price
       );
     }
@@ -164,6 +165,9 @@ export default function Spreadsheet() {
             Reset
           </button>
         </div>
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", margin: "14px 0 4px" }}>
+          <ExchangeRateWidget />
+        </div>
         <div className="sheet-sub">
           <span className="stat">
             Totale: <b>{list.length}</b>
@@ -229,10 +233,10 @@ export default function Spreadsheet() {
                 }}
               />
               <div className="price">
-                <span>{currencyMode === "cny" ? rmb(p.priceRmb ?? p.price * 7.8) : eur(p.price)}</span>
+                <span>{currencyMode === "cny" ? rmb(p.priceRmb ?? p.price * RMB_TO_EUR) : eur(p.price)}</span>
                 {currencyMode === "all" && (
                   <span className="price-rmb" title="Prezzo originale in Yuan (¥)">
-                    {rmb(p.priceRmb ?? p.price * 7.8)}
+                    {rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}
                   </span>
                 )}
               </div>

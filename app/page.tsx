@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { PRODUCTS, eur, rmb, type Product } from "@/lib/products";
+import { PRODUCTS, eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
+import ExchangeRateWidget from "@/components/ExchangeRateWidget";
 
 const PILLS = [
   { label: "Spreadsheet", href: "/spreadsheet", x: "min(26vw, 380px)", y: "-24vh", d: "0s" },
@@ -75,7 +76,10 @@ export default function Home() {
       <section className="section" id="spreadsheet">
         <div className="wrap">
           <h2 className="sec-title reveal">Spreadsheet</h2>
-          <div className="reveal"><Link className="cta" href="/spreadsheet">Entra nella Spreadsheet →</Link></div>
+          <div className="reveal" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+            <Link className="cta" href="/spreadsheet">Entra nella Spreadsheet →</Link>
+            <ExchangeRateWidget compact={false} />
+          </div>
           <div className="rail reveal">
             <div className="rail-scroll" ref={rail}>
               <div className="rail-track">
@@ -95,7 +99,7 @@ export default function Home() {
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                         <span className="badge">WEEKLY BEST</span>
                         <span style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", background: "rgba(0,0,0,0.5)", padding: "2px 8px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.15)", backdropFilter: "blur(4px)" }}>
-                          {eur(p.price)} <span style={{ fontSize: 9.5, color: "#86efac", opacity: 0.85, fontWeight: 500 }}>{rmb(p.priceRmb ?? p.price * 7.8)}</span>
+                          {eur(p.price)} <span style={{ fontSize: 9.5, color: "#86efac", opacity: 0.85, fontWeight: 500 }}>{rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}</span>
                         </span>
                       </div>
                       <div className="rail-title">{p.title}</div>

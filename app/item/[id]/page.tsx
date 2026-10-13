@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PRODUCTS, eur, rmb } from "@/lib/products";
+import { PRODUCTS, eur, rmb, RMB_TO_EUR } from "@/lib/products";
 import { getProductById } from "@/lib/product-store";
 import { getProductDoppelfitUrl } from "@/lib/convert";
 import ItemImage from "./ItemImage";
+import ExchangeRateWidget from "@/components/ExchangeRateWidget";
 
 export const dynamicParams = true;
 export const revalidate = 0;
@@ -30,12 +31,16 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
           <div className="eyebrow">{p.category}</div>
           <h1>{p.title}</h1>
           <div className="kv"><span>Prezzo</span><b>{eur(p.price)}</b></div>
-          <div className="kv"><span>Prezzo originale</span><b style={{ color: "#86efac" }}>{rmb(p.priceRmb ?? p.price * 7.8)}</b></div>
+          <div className="kv"><span>Prezzo originale</span><b style={{ color: "#86efac" }}>{rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}</b></div>
           {p.seller && p.seller !== "—" && p.seller !== "-" && (
             <div className="kv"><span>Seller</span><b>{p.seller}</b></div>
           )}
           <div className="kv"><span>Brand</span><b>{p.brand}</b></div>
           <div className="kv"><span>Categoria</span><b>{p.category}</b></div>
+
+          <div style={{ marginTop: 18, marginBottom: 8 }}>
+            <ExchangeRateWidget defaultEur={p.price} interactive={true} />
+          </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24 }}>
             {p.cssbuyUrl && (

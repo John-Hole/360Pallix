@@ -17,7 +17,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PRODUCTS_FILE = path.join(__dirname, '..', 'data', 'products.json');
-const RMB_TO_EUR = 7.8;
+const RMB_TO_EUR = 7.458;
 
 // Tabella dei prezzi autentici estratti dagli ordini effettivi iTaoBuy / CSSBuy
 const AUTHENTIC_PRICES = {

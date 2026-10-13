@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { eur, rmb, type Product } from "@/lib/products";
+import { eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
+import ExchangeRateWidget from "@/components/ExchangeRateWidget";
 
 const CATEGORIES = [
   "SNEAKERS",
@@ -222,7 +223,7 @@ export default function AdminPage() {
   // Open Edit Modal
   const openEditModal = (p: Product) => {
     setEditingProduct(p);
-    const rmbVal = p.priceRmb ?? (p.price ? Math.round(p.price * 7.8) : "");
+    const rmbVal = p.priceRmb ?? (p.price ? Math.round(p.price * RMB_TO_EUR) : "");
     setEditForm({
       title: p.title || "",
       image: p.image || "",
@@ -252,7 +253,7 @@ export default function AdminPage() {
       return;
     }
 
-    const priceRmb = editForm.priceRmb ? parseFloat(String(editForm.priceRmb).replace(",", ".")) : Math.round(price * 7.8);
+    const priceRmb = editForm.priceRmb ? parseFloat(String(editForm.priceRmb).replace(",", ".")) : Math.round(price * RMB_TO_EUR);
 
     setEditLoading(true);
     try {
@@ -270,7 +271,7 @@ export default function AdminPage() {
           brand: editForm.brand.trim(),
           seller: editForm.seller.trim(),
           price,
-          priceRmb: !isNaN(priceRmb) && priceRmb > 0 ? priceRmb : Math.round(price * 7.8),
+          priceRmb: !isNaN(priceRmb) && priceRmb > 0 ? priceRmb : Math.round(price * RMB_TO_EUR),
         }),
       });
 
@@ -355,7 +356,7 @@ export default function AdminPage() {
         return;
       }
       const pNum = parseFloat(String(d.price || "").replace(",", "."));
-      const rmbVal = d.priceRmb ? String(d.priceRmb) : (!isNaN(pNum) && pNum > 0 ? String(Math.round(pNum * 7.8)) : "");
+      const rmbVal = d.priceRmb ? String(d.priceRmb) : (!isNaN(pNum) && pNum > 0 ? String(Math.round(pNum * RMB_TO_EUR)) : "");
       setF({
         ...emptyProductForm,
         title: d.title || "",
@@ -1013,7 +1014,7 @@ export default function AdminPage() {
                         >
                           <span>{eur(p.price)}</span>
                           <span style={{ fontSize: 10, color: "#86efac", opacity: 0.85, fontWeight: 500 }}>
-                            ¥ {p.priceRmb ?? Math.round(p.price * 7.8)}
+                            ¥ {p.priceRmb ?? Math.round(p.price * RMB_TO_EUR)}
                           </span>
                         </div>
 
@@ -1421,6 +1422,10 @@ export default function AdminPage() {
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
+                  <div style={{ gridColumn: "1 / -1", margin: "4px 0" }}>
+                    <ExchangeRateWidget compact={false} />
+                  </div>
+
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
                       Prezzo in € (EUR) *
@@ -1435,7 +1440,7 @@ export default function AdminPage() {
                         setF((prev) => ({
                           ...prev,
                           price: val,
-                          priceRmb: !isNaN(num) && num > 0 ? String(Math.round(num * 7.8)) : prev.priceRmb,
+                          priceRmb: !isNaN(num) && num > 0 ? String(Math.round(num * RMB_TO_EUR)) : prev.priceRmb,
                         }));
                       }}
                       placeholder="es. 29.90"
@@ -1456,7 +1461,7 @@ export default function AdminPage() {
                         setF((prev) => ({
                           ...prev,
                           priceRmb: val,
-                          price: !isNaN(num) && num > 0 ? (num / 7.8).toFixed(2) : prev.price,
+                          price: !isNaN(num) && num > 0 ? (num / RMB_TO_EUR).toFixed(2) : prev.price,
                         }));
                       }}
                       placeholder="es. 233"
@@ -1829,6 +1834,10 @@ export default function AdminPage() {
 
                 {/* Price, Original Price & Category */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+                  <div style={{ gridColumn: "1 / -1", margin: "4px 0" }}>
+                    <ExchangeRateWidget compact={false} />
+                  </div>
+
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
                       Prezzo in € (EUR) *
@@ -1843,7 +1852,7 @@ export default function AdminPage() {
                         setEditForm((prev) => ({
                           ...prev,
                           price: val,
-                          priceRmb: !isNaN(num) && num > 0 ? String(Math.round(num * 7.8)) : prev.priceRmb,
+                          priceRmb: !isNaN(num) && num > 0 ? String(Math.round(num * RMB_TO_EUR)) : prev.priceRmb,
                         }));
                       }}
                       placeholder="es. 24.50"
@@ -1864,7 +1873,7 @@ export default function AdminPage() {
                         setEditForm((prev) => ({
                           ...prev,
                           priceRmb: val,
-                          price: !isNaN(num) && num > 0 ? (num / 7.8).toFixed(2) : prev.price,
+                          price: !isNaN(num) && num > 0 ? (num / RMB_TO_EUR).toFixed(2) : prev.price,
                         }));
                       }}
                       placeholder="es. 190"

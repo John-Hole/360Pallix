@@ -8,6 +8,9 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: Request, context: RouteContext) {
   const { id } = await context.params;
   const cleanId = decodeURIComponent(id).trim();

@@ -14,7 +14,9 @@ export type Product = {
   doppelfitUrl?: string;
 };
 
-export const RMB_TO_EUR = 7.8;
+export const RMB_TO_EUR = 7.458;
+export const EUR_TO_CNY = 7.458;
+export const EXCHANGE_RATE_DATE = "2026-10-13";
 
 /** 10 sample products imported from the reference catalogue (images stored locally in /public/products). */
 export const BASE_PRODUCTS: Product[] = [
@@ -30,12 +32,20 @@ export const BASE_PRODUCTS: Product[] = [
   { id: "nike-kobe-413", title: "Nike Kobe (413)", seller: "YOLO66", category: "SNEAKERS", brand: "Nike", price: 54.79, priceRmb: 427, image: "/products/p10.jpg" },
 ];
 
-const deletedSet = new Set(Array.isArray(deletedIds) ? (deletedIds as string[]) : []);
-const extraIds = new Set((extra as Product[]).map((p) => p.id));
+const deletedSet = new Set(Array.isArray(deletedIds) ? (deletedIds as string[]).map((id) => String(id).trim().toLowerCase()) : []);
+const extraIds = new Set((extra as Product[]).map((p) => String(p.id).trim().toLowerCase()));
 export const PRODUCTS: Product[] = [
   ...(extra as Product[]),
-  ...BASE_PRODUCTS.filter((p) => !extraIds.has(p.id)),
-].filter((p) => !deletedSet.has(p.id));
+  ...BASE_PRODUCTS.filter((p) => !extraIds.has(String(p.id).trim().toLowerCase())),
+].filter((p) => !deletedSet.has(String(p.id).trim().toLowerCase()));
+
+/**
+ * Synchronizes the in-memory PRODUCTS array with active products from product-store.
+ */
+export function syncInMemoryProducts(list: Product[]): void {
+  PRODUCTS.length = 0;
+  PRODUCTS.push(...list);
+}
 
 export const eur = (n?: number | null) => {
   if (n === undefined || n === null || isNaN(n) || n <= 0) return "€ —";

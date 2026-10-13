@@ -1,6 +1,6 @@
 import { promises as fs } from "fs";
 import path from "path";
-import { BASE_PRODUCTS, Product, RMB_TO_EUR } from "./products";
+import { BASE_PRODUCTS, Product, RMB_TO_EUR, syncInMemoryProducts } from "./products";
 import { formatDoppelfitLink } from "./convert";
 
 const FILE = path.join(process.cwd(), "data", "products.json");
@@ -166,19 +166,32 @@ export async function updateProduct(
   }
 
   await writeRawProducts(extra);
+  try {
+    const all = await getAllProducts();
+    syncInMemoryProducts(all);
+  } catch {}
   return updatedProduct;
 }
 
 export async function deleteProduct(id: string): Promise<boolean> {
   if (!id) return false;
   const rawId = String(id).trim();
-  const cleanId = decodeURIComponent(rawId).trim();
-  const targetIds = new Set([
-    rawId,
-    cleanId,
-    rawId.toLowerCase(),
-    cleanId.toLowerCase(),
-  ]);
+  let cleanId = rawId;
+  try {
+    cleanId = decodeURIComponent(rawId).trim();
+  } catch {}
+
+  const targetIds = new Set<string>();
+  for (const item of [rawId, cleanId]) {
+    if (!item) continue;
+    targetIds.add(item);
+    targetIds.add(item.toLowerCase());
+    try {
+      const enc = encodeURIComponent(item);
+      targetIds.add(enc);
+      targetIds.add(enc.toLowerCase());
+    } catch {}
+  }
 
   const [extra, deletedIds] = await Promise.all([
     readRawProducts(),
@@ -186,28 +199,35 @@ export async function deleteProduct(id: string): Promise<boolean> {
   ]);
 
   // Remove any matching items from extra
-  const initialLength = extra.length;
   const newExtra = extra.filter((p) => {
     const pid = String(p.id || "").trim();
-    return !targetIds.has(pid) && !targetIds.has(pid.toLowerCase());
-  });
-  const existedInExtra = newExtra.length !== initialLength;
-
-  // Check if it exists in BASE_PRODUCTS
-  const existedInBase = BASE_PRODUCTS.some((p) => {
-    const pid = String(p.id || "").trim();
-    return targetIds.has(pid) || targetIds.has(pid.toLowerCase());
+    let pidDecoded = pid;
+    try {
+      pidDecoded = decodeURIComponent(pid).trim();
+    } catch {}
+    return (
+      !targetIds.has(pid) &&
+      !targetIds.has(pid.toLowerCase()) &&
+      !targetIds.has(pidDecoded) &&
+      !targetIds.has(pidDecoded.toLowerCase())
+    );
   });
 
   // Always register in deletedIds so it never resurfaces from BASE_PRODUCTS
-  deletedIds.add(rawId);
-  deletedIds.add(cleanId);
-  await writeDeletedIds(deletedIds);
-
-  if (existedInExtra) {
-    await writeRawProducts(newExtra);
+  for (const tid of targetIds) {
+    deletedIds.add(tid);
   }
 
-  // Deletion is successful if it was removed from extra, existed in base, or recorded in deletedIds
+  // Write both files
+  await Promise.all([
+    writeDeletedIds(deletedIds),
+    writeRawProducts(newExtra),
+  ]);
+
+  try {
+    const all = await getAllProducts();
+    syncInMemoryProducts(all);
+  } catch {}
+
   return true;
 }

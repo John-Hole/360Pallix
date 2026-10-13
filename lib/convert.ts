@@ -1,3 +1,5 @@
+import { RMB_TO_EUR } from "./products";
+
 export type Platform = "weidian" | "taobao" | "1688";
 
 export type Parsed = { platform: Platform; itemId: string; sourceUrl: string };
@@ -259,7 +261,7 @@ export async function scrapeInfo(url: string) {
         // I prezzi delle piattaforme cinesi (Weidian, Taobao, 1688) sono sempre in Yuan (¥ CNY)
         const rmbClean = pNum % 1 === 0 ? pNum : parseFloat(pNum.toFixed(2));
         out.priceRmb = String(rmbClean);
-        out.price = (pNum / 7.8).toFixed(2);
+        out.price = (pNum / RMB_TO_EUR).toFixed(2);
       }
     }
   } catch {
