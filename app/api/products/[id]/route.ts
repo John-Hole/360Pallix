@@ -3,7 +3,7 @@ import { getProductById, updateProduct, deleteProduct } from "@/lib/product-stor
 import { formatDoppelfitLink } from "@/lib/convert";
 
 interface RouteContext {
-  params: Promise<{ id: string }> | { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export async function GET(req: Request, context: RouteContext) {
