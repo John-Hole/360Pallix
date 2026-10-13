@@ -2563,54 +2563,60 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ display: "block", fontSize: 12.5, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                  Password Admin *
-                </label>
-                <input
-                  type="password"
-                  value={adminPw}
-                  onChange={(e) => handleAdminPwChange(e.target.value)}
-                  placeholder="Inserisci password admin"
-                  style={inputStyle}
-                />
-              </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleDeleteProduct();
+                }}
+              >
+                <div style={{ marginBottom: 18 }}>
+                  <label style={{ display: "block", fontSize: 12.5, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
+                    Password Admin *
+                  </label>
+                  <input
+                    type="password"
+                    value={adminPw}
+                    onChange={(e) => handleAdminPwChange(e.target.value)}
+                    placeholder="Inserisci password admin"
+                    style={inputStyle}
+                  />
+                </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={() => setDeletingProduct(null)}
-                  style={{
-                    padding: "9px 18px",
-                    borderRadius: 12,
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    color: "#fff",
-                    fontSize: 13,
-                    cursor: "pointer",
-                  }}
-                >
-                  Annulla
-                </button>
-                <button
-                  type="button"
-                  disabled={deleteLoading}
-                  onClick={handleDeleteProduct}
-                  style={{
-                    padding: "9px 20px",
-                    borderRadius: 12,
-                    background: "linear-gradient(90deg, #ef4444, #dc2626)",
-                    border: 0,
-                    color: "#fff",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: deleteLoading ? "wait" : "pointer",
-                    boxShadow: "0 6px 20px rgba(239, 68, 68, 0.4)",
-                  }}
-                >
-                  {deleteLoading ? "Eliminazione..." : "🗑️ Elimina Prodotto"}
-                </button>
-              </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => setDeletingProduct(null)}
+                    style={{
+                      padding: "9px 18px",
+                      borderRadius: 12,
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      color: "#fff",
+                      fontSize: 13,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={deleteLoading}
+                    style={{
+                      padding: "9px 20px",
+                      borderRadius: 12,
+                      background: "linear-gradient(90deg, #ef4444, #dc2626)",
+                      border: 0,
+                      color: "#fff",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: deleteLoading ? "wait" : "pointer",
+                      boxShadow: "0 6px 20px rgba(239, 68, 68, 0.4)",
+                    }}
+                  >
+                    {deleteLoading ? "Eliminazione..." : "🗑️ Elimina Prodotto"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}
