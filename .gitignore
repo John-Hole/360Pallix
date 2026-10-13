@@ -3,3 +3,6 @@ node_modules
 _ref
 *.log
 .env.local
+
+.bot-profile
+scripts/.bot-output
