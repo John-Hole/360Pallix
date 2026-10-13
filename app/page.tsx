@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { PRODUCTS, eur } from "@/lib/products";
@@ -51,7 +51,7 @@ export default function Home() {
   return (
     <main>
       <section className="hero" ref={heroRef}>
-        <div className="hero-wordmark">Pallix360</div>
+        <div className="hero-wordmark">360Pallix</div>
         {PILLS.map((p) => (
           <div key={p.label} className="orbit orbit-pos" style={{ ["--x" as string]: p.x, ["--y" as string]: p.y, ["--d" as string]: p.d, marginLeft: "var(--px,0)", marginTop: "var(--py,0)" }}>
             <Link className="hero-pill" href={p.href}>{p.label}</Link>
@@ -126,7 +126,7 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="foot">© {new Date().getFullYear()} Pallix360 · {eur(0).slice(0, 1)} sample catalog</div>
+      <div className="foot">© {new Date().getFullYear()} 360Pallix · {eur(0).slice(0, 1)} sample catalog</div>
     </main>
   );
 }

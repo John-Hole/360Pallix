@@ -1,4 +1,4 @@
-# Pallix360
+# 360Pallix
 
 Next.js clone UI (home + /spreadsheet, 10 sample products).
 

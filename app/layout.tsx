@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Pallix360",
-  description: "Pallix360 — spreadsheet, best seller, tutorial e coupon.",
+  title: "360Pallix",
+  description: "360Pallix — spreadsheet, best seller, tutorial e coupon.",
 };
 
 export const viewport: Viewport = {
