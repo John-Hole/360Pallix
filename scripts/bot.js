@@ -129,8 +129,10 @@ function buildAffiliateLink(sourceUrl) {
   page.on('response', async (response) => {
     const url = response.url();
     if (
-      (url.includes('order') || url.includes('goods') || url.includes('list') || url.includes('user')) &&
-      !url.endsWith('.js') && !url.endsWith('.css') && !url.endsWith('.png') && !url.endsWith('.jpg')
+      (url.includes('cssbuy.com') || url.includes('itaobuy.com')) &&
+      !url.endsWith('.js') && !url.endsWith('.css') && !url.endsWith('.png') &&
+      !url.endsWith('.jpg') && !url.endsWith('.svg') && !url.endsWith('.woff') &&
+      !url.endsWith('.woff2') && !url.endsWith('.ttf')
     ) {
       try {
         const text = await response.text();
