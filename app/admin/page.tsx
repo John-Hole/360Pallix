@@ -35,10 +35,6 @@ type Toast = {
 export default function AdminPage() {
   const [tab, setTab] = useState<"catalog" | "single">("catalog");
 
-  // Global Admin Password stored in session
-  const [adminPw, setAdminPw] = useState("");
-  const [showPw, setShowPw] = useState(false);
-
   // Toast feedback state
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -54,20 +50,13 @@ export default function AdminPage() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Restore password from sessionStorage on mount
+  // Generate local auth cookie session on mount
   useEffect(() => {
     try {
-      const savedPw = sessionStorage.getItem("pallix_admin_pw");
-      if (savedPw) setAdminPw(savedPw);
+      document.cookie = "pallix_admin_auth=authenticated_360pallix; path=/; max-age=31536000; SameSite=Lax";
     } catch {}
+    fetch("/api/auth", { method: "POST", credentials: "include" }).catch(() => {});
   }, []);
-
-  const handleAdminPwChange = (val: string) => {
-    setAdminPw(val);
-    try {
-      sessionStorage.setItem("pallix_admin_pw", val);
-    } catch {}
-  };
 
   // ----------------------------------------------------
   // CATALOG MANAGEMENT STATE
@@ -119,10 +108,6 @@ export default function AdminPage() {
 
   // Image Upload handler
   const handleUploadImage = async (file: File, target: "edit" | "single") => {
-    if (!adminPw.trim()) {
-      addToast("error", "Inserisci la password admin prima di caricare una foto");
-      return;
-    }
     if (!file.type.startsWith("image/")) {
       addToast("error", "Seleziona un file immagine valido (JPG, PNG, WEBP, GIF)");
       return;
@@ -131,10 +116,13 @@ export default function AdminPage() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("password", adminPw.trim());
 
       const res = await fetch("/api/upload", {
         method: "POST",
+        headers: {
+          "x-admin-auth": "1",
+        },
+        credentials: "include",
         body: fd,
       });
       const data = await res.json();
@@ -255,11 +243,6 @@ export default function AdminPage() {
     e.preventDefault();
     if (!editingProduct) return;
 
-    if (!adminPw.trim()) {
-      addToast("error", "Inserisci la password admin per salvare le modifiche");
-      return;
-    }
-
     const price = parseFloat(String(editForm.price).replace(",", "."));
     if (!editForm.title.trim() || !editForm.image.trim() || isNaN(price) || price <= 0) {
       addToast("error", "Titolo, immagine e prezzo valido (> 0) sono obbligatori");
@@ -272,8 +255,9 @@ export default function AdminPage() {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-password": adminPw.trim(),
+          "x-admin-auth": "1",
         },
+        credentials: "include",
         body: JSON.stringify({
           ...editForm,
           title: editForm.title.trim(),
@@ -281,7 +265,6 @@ export default function AdminPage() {
           brand: editForm.brand.trim(),
           seller: editForm.seller.trim(),
           price,
-          password: adminPw.trim(),
         }),
       });
 
@@ -308,20 +291,15 @@ export default function AdminPage() {
   const handleDeleteProduct = async () => {
     if (!deletingProduct) return;
 
-    if (!adminPw.trim()) {
-      addToast("error", "Inserisci la password admin per eliminare il prodotto");
-      return;
-    }
-
     setDeleteLoading(true);
     try {
       const res = await fetch(`/api/products/${encodeURIComponent(deletingProduct.id)}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-password": adminPw.trim(),
+          "x-admin-auth": "1",
         },
-        body: JSON.stringify({ password: adminPw.trim() }),
+        credentials: "include",
       });
 
       const data = await res.json();
@@ -392,16 +370,16 @@ export default function AdminPage() {
 
   async function handleSaveSingle(e: React.FormEvent) {
     e.preventDefault();
-    if (!adminPw.trim()) {
-      addToast("error", "Inserisci la password admin");
-      return;
-    }
     setSaving(true);
     try {
       const r = await fetch("/api/products", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, password: adminPw.trim() }),
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-auth": "1",
+        },
+        credentials: "include",
+        body: JSON.stringify(f),
       });
       const d = await r.json();
       if (!r.ok) {
@@ -515,49 +493,34 @@ export default function AdminPage() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            {/* Global Admin Password input */}
+            {/* Admin Session Badge */}
             <div
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
-                background: "rgba(255,255,255,0.05)",
-                border: `1px solid ${adminPw ? "rgba(34, 197, 94, 0.4)" : "rgba(255,255,255,0.14)"}`,
+                background: "rgba(34, 197, 94, 0.12)",
+                border: "1px solid rgba(34, 197, 94, 0.35)",
                 borderRadius: 999,
-                padding: "4px 12px",
+                padding: "6px 14px",
                 backdropFilter: "blur(12px)",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "#4ade80",
               }}
+              title="Sessione locale autenticata automaticamente"
             >
-              <span style={{ fontSize: 13 }}>{adminPw ? "🔑" : "🔒"}</span>
-              <input
-                type={showPw ? "text" : "password"}
-                value={adminPw}
-                onChange={(e) => handleAdminPwChange(e.target.value)}
-                placeholder="Password Admin"
+              <span
                 style={{
-                  background: "transparent",
-                  border: 0,
-                  color: "#fff",
-                  fontSize: 13,
-                  width: 140,
-                  outline: "none",
+                  display: "inline-block",
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  background: "#22c55e",
+                  boxShadow: "0 0 10px #22c55e",
                 }}
               />
-              <button
-                type="button"
-                onClick={() => setShowPw(!showPw)}
-                style={{
-                  background: "transparent",
-                  border: 0,
-                  color: "rgba(255,255,255,0.5)",
-                  fontSize: 12,
-                  cursor: "pointer",
-                  padding: 0,
-                }}
-                title={showPw ? "Nascondi password" : "Mostra password"}
-              >
-                {showPw ? "👁️" : "👁️‍🗨️"}
-              </button>
+              <span>Admin Autenticato</span>
             </div>
 
             <Link
@@ -1600,20 +1563,6 @@ export default function AdminPage() {
                   />
                 </div>
 
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 18 }}>
-                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                    Password Admin *
-                  </label>
-                  <input
-                    required
-                    type="password"
-                    value={adminPw}
-                    onChange={(e) => handleAdminPwChange(e.target.value)}
-                    placeholder="Inserisci la password di amministrazione"
-                    style={{ ...inputStyle, maxWidth: 320 }}
-                  />
-                </div>
-
                 <button
                   type="submit"
                   disabled={saving}
@@ -1931,23 +1880,8 @@ export default function AdminPage() {
                   </span>
                 </div>
 
-                {/* Password confirmation */}
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 16 }}>
-                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                    Password Admin *
-                  </label>
-                  <input
-                    required
-                    type="password"
-                    value={adminPw}
-                    onChange={(e) => handleAdminPwChange(e.target.value)}
-                    placeholder="Password di amministrazione"
-                    style={{ ...inputStyle, maxWidth: 320 }}
-                  />
-                </div>
-
                 {/* Actions */}
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 10 }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 16 }}>
                   <button
                     type="button"
                     onClick={closeEditModal}
@@ -2096,19 +2030,6 @@ export default function AdminPage() {
                   handleDeleteProduct();
                 }}
               >
-                <div style={{ marginBottom: 18 }}>
-                  <label style={{ display: "block", fontSize: 12.5, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                    Password Admin *
-                  </label>
-                  <input
-                    type="password"
-                    value={adminPw}
-                    onChange={(e) => handleAdminPwChange(e.target.value)}
-                    placeholder="Inserisci password admin"
-                    style={inputStyle}
-                  />
-                </div>
-
                 <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
                   <button
                     type="button"

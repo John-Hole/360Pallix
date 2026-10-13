@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getProductById, updateProduct, deleteProduct } from "@/lib/product-store";
 import { formatDoppelfitLink } from "@/lib/convert";
+import { isAuthorized } from "@/lib/auth";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -26,12 +27,8 @@ export async function PUT(req: Request, context: RouteContext) {
     return NextResponse.json({ error: "Corpo della richiesta JSON non valido" }, { status: 400 });
   }
 
-  const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
-  const headerPw = req.headers.get("x-admin-password");
-  const password = body.password || headerPw || "";
-
-  if (password !== expectedPw) {
-    return NextResponse.json({ error: "Password admin errata" }, { status: 401 });
+  if (!isAuthorized(req, body?.password)) {
+    return NextResponse.json({ error: "Accesso non autorizzato" }, { status: 401 });
   }
 
   const price = parseFloat(String(body.price).replace(",", "."));
@@ -62,32 +59,18 @@ export async function PUT(req: Request, context: RouteContext) {
 
 export async function DELETE(req: Request, context: RouteContext) {
   const { id } = await context.params;
-  const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
 
-  let password = "";
-  // Check password in header first
-  const headerPw = req.headers.get("x-admin-password");
-  if (headerPw) {
-    password = headerPw;
-  } else {
-    // Check URL search params
-    const { searchParams } = new URL(req.url);
-    const paramPw = searchParams.get("password");
-    if (paramPw) {
-      password = paramPw;
-    } else {
-      // Check body
-      try {
-        const body = await req.json();
-        password = body.password || "";
-      } catch {
-        password = "";
-      }
-    }
-  }
+  let bodyPassword = "";
+  try {
+    const body = await req.json();
+    bodyPassword = body.password || "";
+  } catch {}
 
-  if (password !== expectedPw) {
-    return NextResponse.json({ error: "Password admin errata" }, { status: 401 });
+  const { searchParams } = new URL(req.url);
+  const paramPw = searchParams.get("password") || bodyPassword;
+
+  if (!isAuthorized(req, paramPw)) {
+    return NextResponse.json({ error: "Accesso non autorizzato" }, { status: 401 });
   }
 
   const success = await deleteProduct(id);

@@ -1,19 +1,17 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { isAuthorized } from "@/lib/auth";
 
 const ALLOWED_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".svg", ".avif"]);
 
 export async function POST(req: Request) {
   try {
-    const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
-    const headerPw = req.headers.get("x-admin-password");
-
     const formData = await req.formData();
-    const password = (formData.get("password") as string) || headerPw || "";
+    const password = (formData.get("password") as string) || "";
 
-    if (password !== expectedPw) {
-      return NextResponse.json({ error: "Password admin non valida" }, { status: 401 });
+    if (!isAuthorized(req, password)) {
+      return NextResponse.json({ error: "Accesso non autorizzato" }, { status: 401 });
     }
 
     const file = formData.get("file") as File | null;

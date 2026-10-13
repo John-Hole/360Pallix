@@ -11,6 +11,7 @@ import {
   deleteProduct,
   sanitizeSeller,
 } from "@/lib/product-store";
+import { isAuthorized } from "@/lib/auth";
 
 export async function GET() {
   try {
@@ -32,12 +33,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Corpo della richiesta JSON non valido" }, { status: 400 });
   }
 
-  const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
-  const headerPw = req.headers.get("x-admin-password");
-  const password = body.password || headerPw || "";
-
-  if (password !== expectedPw) {
-    return NextResponse.json({ error: "Password errata" }, { status: 401 });
+  if (!isAuthorized(req, body?.password)) {
+    return NextResponse.json({ error: "Accesso non autorizzato" }, { status: 401 });
   }
 
   let list = await readRawProducts();
@@ -157,12 +154,8 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "Corpo della richiesta JSON non valido" }, { status: 400 });
   }
 
-  const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
-  const headerPw = req.headers.get("x-admin-password");
-  const password = body.password || headerPw || "";
-
-  if (password !== expectedPw) {
-    return NextResponse.json({ error: "Password admin errata" }, { status: 401 });
+  if (!isAuthorized(req, body?.password)) {
+    return NextResponse.json({ error: "Accesso non autorizzato" }, { status: 401 });
   }
 
   if (!body.id) {
@@ -207,14 +200,11 @@ export async function DELETE(req: Request) {
     // Body might be empty
   }
 
-  const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
-  const headerPw = req.headers.get("x-admin-password");
   const { searchParams } = new URL(req.url);
-  const paramPw = searchParams.get("password");
-  const password = headerPw || body.password || paramPw || "";
+  const paramPw = searchParams.get("password") || body.password;
 
-  if (password !== expectedPw) {
-    return NextResponse.json({ error: "Password admin errata" }, { status: 401 });
+  if (!isAuthorized(req, paramPw)) {
+    return NextResponse.json({ error: "Accesso non autorizzato" }, { status: 401 });
   }
 
   const id = body.id || searchParams.get("id");
