@@ -2164,11 +2164,51 @@ export default function AdminPage() {
               </div>
 
               <form onSubmit={handleSaveEdit} style={{ display: "grid", gap: 18 }}>
-                {/* Image Section with Live Preview */}
+                {/* Image Section with Live Preview + Direct PC Upload */}
                 <div>
-                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                    URL Immagine / Foto Prodotto *
-                  </label>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
+                    <label style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
+                      URL Immagine / Foto Prodotto *
+                    </label>
+                    <label
+                      style={{
+                        fontSize: 12,
+                        color: "#38bdf8",
+                        cursor: uploadingImg ? "wait" : "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "4px 10px",
+                        borderRadius: 8,
+                        background: "rgba(56, 189, 248, 0.12)",
+                        border: "1px solid rgba(56, 189, 248, 0.3)",
+                        fontWeight: 600,
+                      }}
+                      title="Scegli una foto dal tuo computer da caricare"
+                    >
+                      {uploadingImg ? (
+                        <>
+                          <span style={{ display: "inline-block", animation: "spin 0.8s linear infinite" }}>🔄</span>
+                          <span>Caricamento in corso...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>📁</span>
+                          <span>Carica foto dal PC</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingImg}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadImage(file, "edit");
+                        }}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                  </div>
                   <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                     <div
                       style={{
@@ -2179,6 +2219,7 @@ export default function AdminPage() {
                         background: "rgba(0,0,0,0.5)",
                         border: "1px solid rgba(255,255,255,0.18)",
                         flexShrink: 0,
+                        position: "relative",
                       }}
                     >
                       <img
@@ -2190,6 +2231,19 @@ export default function AdminPage() {
                         }}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
+                      {uploadingImg && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            background: "rgba(0,0,0,0.65)",
+                            display: "grid",
+                            placeItems: "center",
+                          }}
+                        >
+                          <span style={{ fontSize: 22, display: "inline-block", animation: "spin 0.8s linear infinite" }}>🔄</span>
+                        </div>
+                      )}
                     </div>
                     <div style={{ flex: 1 }}>
                       <input
@@ -2197,11 +2251,11 @@ export default function AdminPage() {
                         type="text"
                         value={editForm.image}
                         onChange={(e) => setEditForm((prev) => ({ ...prev, image: e.target.value }))}
-                        placeholder="https://..."
+                        placeholder="https://... oppure /uploads/..."
                         style={inputStyle}
                       />
                       <span style={{ fontSize: 11.5, color: "rgba(255,255,255,0.45)", marginTop: 6, display: "block" }}>
-                        Incolla un URL valido (Taobao, Weidian, 1688 CDN o immagine locale). L&apos;anteprima a sinistra si aggiorna in tempo reale.
+                        Incolla un URL web diretto oppure clicca &quot;📁 Carica foto dal PC&quot; per salvare una foto dal computer.
                       </span>
                     </div>
                   </div>
@@ -2223,7 +2277,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Price & Category */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
                       Prezzo in € * (es. 24.50)
@@ -2257,7 +2311,7 @@ export default function AdminPage() {
                 </div>
 
                 {/* Brand & Seller */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
                       Brand
