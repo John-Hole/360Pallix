@@ -37,5 +37,12 @@ export const PRODUCTS: Product[] = [
   ...BASE_PRODUCTS.filter((p) => !extraIds.has(p.id)),
 ].filter((p) => !deletedSet.has(p.id));
 
-export const eur = (n: number) => `€ ${n.toFixed(2)}`;
-export const rmb = (n: number) => `¥ ${Math.round(n)}`;
+export const eur = (n?: number | null) => {
+  if (n === undefined || n === null || isNaN(n) || n <= 0) return "€ —";
+  return `€ ${n.toFixed(2)}`;
+};
+
+export const rmb = (n?: number | null) => {
+  if (n === undefined || n === null || isNaN(n) || n <= 0) return "¥ —";
+  return n % 1 === 0 ? `¥ ${n}` : `¥ ${n.toFixed(2)}`;
+};

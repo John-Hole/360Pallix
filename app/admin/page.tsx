@@ -355,7 +355,7 @@ export default function AdminPage() {
         return;
       }
       const pNum = parseFloat(String(d.price || "").replace(",", "."));
-      const rmbVal = !isNaN(pNum) && pNum > 0 ? String(Math.round(pNum * 7.8)) : "";
+      const rmbVal = d.priceRmb ? String(d.priceRmb) : (!isNaN(pNum) && pNum > 0 ? String(Math.round(pNum * 7.8)) : "");
       setF({
         ...emptyProductForm,
         title: d.title || "",

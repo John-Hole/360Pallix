@@ -26,6 +26,11 @@ export default function Spreadsheet() {
     setFavs(JSON.parse(localStorage.getItem("pallix-favs") || "[]"));
     setLegal(!localStorage.getItem("pallix-legal"));
 
+    const savedMode = localStorage.getItem("pallix-currency-mode") as "all" | "eur" | "cny" | null;
+    if (savedMode && ["all", "eur", "cny"].includes(savedMode)) {
+      setCurrencyMode(savedMode);
+    }
+
     fetch(`/api/products?t=${Date.now()}`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -42,6 +47,13 @@ export default function Spreadsheet() {
     localStorage.setItem("pallix-favs", JSON.stringify(n));
   };
 
+  const handleCurrencyModeChange = (mode: "all" | "eur" | "cny") => {
+    setCurrencyMode(mode);
+    try {
+      localStorage.setItem("pallix-currency-mode", mode);
+    } catch {}
+  };
+
   const list = useMemo(() => {
     let l = allProducts.filter(
       (p) =>
@@ -51,10 +63,22 @@ export default function Spreadsheet() {
         (!cat || p.category === cat) &&
         (!onlyFavs || favs.includes(p.id))
     );
-    if (order === "asc") l = [...l].sort((a, b) => a.price - b.price);
-    if (order === "desc") l = [...l].sort((a, b) => b.price - a.price);
+    if (order === "asc") {
+      l = [...l].sort((a, b) =>
+        currencyMode === "cny"
+          ? (a.priceRmb ?? a.price * 7.8) - (b.priceRmb ?? b.price * 7.8)
+          : a.price - b.price
+      );
+    }
+    if (order === "desc") {
+      l = [...l].sort((a, b) =>
+        currencyMode === "cny"
+          ? (b.priceRmb ?? b.price * 7.8) - (a.priceRmb ?? a.price * 7.8)
+          : b.price - a.price
+      );
+    }
     return l;
-  }, [allProducts, q, order, seller, brand, cat, onlyFavs, favs]);
+  }, [allProducts, q, order, seller, brand, cat, onlyFavs, favs, currencyMode]);
 
   const pages = Math.max(1, Math.ceil(list.length / perPage));
   const cur = Math.min(page, pages);
@@ -67,7 +91,7 @@ export default function Spreadsheet() {
   // back to page 1 whenever filters change
   useEffect(() => {
     setPage(1);
-  }, [q, order, seller, brand, cat, onlyFavs]);
+  }, [q, order, seller, brand, cat, onlyFavs, currencyMode]);
 
   const reset = () => {
     setQ("");
@@ -76,6 +100,9 @@ export default function Spreadsheet() {
     setBrand("");
     setCat("");
     setCurrencyMode("all");
+    try {
+      localStorage.setItem("pallix-currency-mode", "all");
+    } catch {}
     setOnlyFavs(false);
     setPage(1);
   };
@@ -109,7 +136,7 @@ export default function Spreadsheet() {
           <select
             className="sel"
             value={currencyMode}
-            onChange={(e) => setCurrencyMode(e.target.value as "all" | "eur" | "cny")}
+            onChange={(e) => handleCurrencyModeChange(e.target.value as "all" | "eur" | "cny")}
           >
             <option value="all">Prezzi: € EUR + ¥ CNY</option>
             <option value="eur">Prezzi: Solo € EUR</option>

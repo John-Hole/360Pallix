@@ -256,14 +256,10 @@ export async function scrapeInfo(url: string) {
     if (rawPrice) {
       const pNum = parseFloat(rawPrice.replace(/[^\d.]/g, ""));
       if (!isNaN(pNum) && pNum > 0) {
-        // Se il prezzo è in Yuan cinese (sorgente Weidian/1688/Taobao)
-        if (pNum >= 15) {
-          out.priceRmb = String(Math.round(pNum));
-          out.price = (pNum / 7.8).toFixed(2);
-        } else {
-          out.price = pNum.toFixed(2);
-          out.priceRmb = String(Math.round(pNum * 7.8));
-        }
+        // I prezzi delle piattaforme cinesi (Weidian, Taobao, 1688) sono sempre in Yuan (¥ CNY)
+        const rmbClean = pNum % 1 === 0 ? pNum : parseFloat(pNum.toFixed(2));
+        out.priceRmb = String(rmbClean);
+        out.price = (pNum / 7.8).toFixed(2);
       }
     }
   } catch {

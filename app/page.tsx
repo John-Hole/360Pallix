@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { PRODUCTS, eur, type Product } from "@/lib/products";
+import { PRODUCTS, eur, rmb, type Product } from "@/lib/products";
 
 const PILLS = [
   { label: "Spreadsheet", href: "/spreadsheet", x: "min(26vw, 380px)", y: "-24vh", d: "0s" },
@@ -92,7 +92,12 @@ export default function Home() {
                       }}
                     />
                     <div className="rail-meta">
-                      <span className="badge">WEEKLY BEST</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                        <span className="badge">WEEKLY BEST</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", background: "rgba(0,0,0,0.5)", padding: "2px 8px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.15)", backdropFilter: "blur(4px)" }}>
+                          {eur(p.price)} <span style={{ fontSize: 9.5, color: "#86efac", opacity: 0.85, fontWeight: 500 }}>{rmb(p.priceRmb ?? p.price * 7.8)}</span>
+                        </span>
+                      </div>
                       <div className="rail-title">{p.title}</div>
                       <div className="rail-sub">
                         {p.seller && p.seller !== "—" && p.seller !== "-" ? `${p.category} • ${p.seller}` : p.category}
