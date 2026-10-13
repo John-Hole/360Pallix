@@ -97,6 +97,9 @@ function attachListener(page) {
   page.on('response', async (res) => {
     const url = res.url();
     if (!/(cssbuy\.com|itaobuy\.com)/i.test(url)) return;
+    // Solo endpoint dei TUOI ordini (esclude carrello, prodotti consigliati, acquisti di altri utenti)
+    if (!/(\/user\/order|getUserOrderDetail|order\/front\/order|orderList|OrderPage)/i.test(url)) return;
+    if (/(cart|spuProduct|pageList|statistics|buyReport|realTime)/i.test(url)) return;
     const ct = (res.headers()['content-type'] || '');
     if (!ct.includes('json')) return;
     try {
