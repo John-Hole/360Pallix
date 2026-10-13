@@ -156,6 +156,18 @@ function buildAffiliateLink(sourceUrl) {
               let title = cleanTitle(item.goods_name || item.goodsName || item.goods_title || item.title || item.name || order.goods_name || '');
               if (!title || title.length < 2) return;
 
+              const lower = title.toLowerCase();
+              if (
+                lower.includes('measure size') ||
+                lower.includes('protection box') ||
+                lower.includes('air column') ||
+                lower.includes('shoe tree') ||
+                lower.includes('take video') ||
+                lower.includes('insurance') ||
+                lower.includes('bubble film') ||
+                lower.includes('order number')
+              ) return;
+
               let image = item.goods_img || item.goodsImg || item.goods_pic || item.pic || item.image || item.img || order.goods_img || '';
               if (image.startsWith('//')) image = 'https:' + image;
               if (image.includes('commonImage') || image.includes('trunanrk') || image.includes('logo')) image = '';
