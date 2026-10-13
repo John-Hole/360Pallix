@@ -1862,15 +1862,55 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                    URL Immagine * (URL web o percorso es. /products/p1.jpg)
-                  </label>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
+                    <label style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
+                      URL Immagine * (URL web o percorso es. /products/p1.jpg)
+                    </label>
+                    <label
+                      style={{
+                        fontSize: 12,
+                        color: "#38bdf8",
+                        cursor: uploadingImg ? "wait" : "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "4px 10px",
+                        borderRadius: 8,
+                        background: "rgba(56, 189, 248, 0.12)",
+                        border: "1px solid rgba(56, 189, 248, 0.3)",
+                        fontWeight: 600,
+                      }}
+                      title="Scegli una foto dal tuo computer da caricare"
+                    >
+                      {uploadingImg ? (
+                        <>
+                          <span style={{ display: "inline-block", animation: "spin 0.8s linear infinite" }}>🔄</span>
+                          <span>Caricamento in corso...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>📁</span>
+                          <span>Carica foto dal PC</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={uploadingImg}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadImage(file, "single");
+                        }}
+                        style={{ display: "none" }}
+                      />
+                    </label>
+                  </div>
                   <input
                     required
                     type="text"
                     value={f.image}
                     onChange={setField("image")}
-                    placeholder="https://..."
+                    placeholder="https://... oppure /uploads/..."
                     style={inputStyle}
                   />
                   {f.image && (
@@ -1878,7 +1918,10 @@ export default function AdminPage() {
                       <img
                         src={f.image}
                         alt="Anteprima"
-                        onError={(e) => ((e.target as HTMLElement).style.display = "none")}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src =
+                            "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23222'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23777' font-size='10'%3EAnteprima%3C/text%3E%3C/svg%3E";
+                        }}
                         style={{
                           width: 80,
                           height: 80,
