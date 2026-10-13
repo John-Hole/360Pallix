@@ -151,7 +151,7 @@ const finalProducts = classified.map((item, idx) => {
   return {
     id: `${slug}-${idx + 1}`,
     title: item.title,
-    seller: item.seller || 'CSSBuy Order',
+    seller: item.seller || '',
     category: item.category,
     brand: item.brand,
     price: item.price,

@@ -251,7 +251,7 @@ function detect(title) {
     const prod = {
       id: old ? old.id : `${e.src.type}-${e.src.id}`,
       title,
-      seller: e.seller || (old && old.seller) || 'Verified Order',
+      seller: e.seller || (old && old.seller) || '',
       category: old && old.category !== 'OTHER' ? old.category : category,
       brand: old && old.brand !== '—' ? old.brand : brand,
       price,

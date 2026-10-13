@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PRODUCTS, eur } from "@/lib/products";
 import { getProductById } from "@/lib/product-store";
+import ItemImage from "./ItemImage";
 
 export const dynamicParams = true;
 export const revalidate = 0;
@@ -20,14 +21,7 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
       <Link href="/spreadsheet" className="back">← Spreadsheet</Link>
       <div className="item-grid">
         <div className="item-img">
-          <img
-            src={p.image}
-            alt={p.title}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).src =
-                "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='500' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='16'%3EImmagine non disp.%3C/text%3E%3C/svg%3E";
-            }}
-          />
+          <ItemImage src={p.image} alt={p.title} />
         </div>
         <div className="item-info glass">
           <div className="eyebrow">{p.category}</div>

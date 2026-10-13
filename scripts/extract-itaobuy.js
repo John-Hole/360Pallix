@@ -119,7 +119,7 @@
                   image,
                   price,
                   sourceUrl: sourceUrl || window.location.href,
-                  seller: item.shop_name || item.shopName || "iTaoBuy Order",
+                  seller: item.shop_name || item.shopName || "",
                 }));
               });
             });
@@ -203,7 +203,7 @@
                   image,
                   price,
                   sourceUrl: sourceUrl || window.location.href,
-                  seller: item.shop_name || "iTaoBuy Order",
+                  seller: item.shop_name || "",
                 }));
               });
             });
@@ -343,7 +343,7 @@
           image,
           price,
           sourceUrl: sourceUrl || `${window.location.href}#${collectedMap.size + 1}`,
-          seller: "iTaoBuy Order",
+          seller: "",
         });
         collectedMap.set(uniqueKey, itemObj);
         console.log(`[${collectedMap.size}] ✅ ${title.slice(0, 40)} | €${price}`);
@@ -432,7 +432,7 @@
       image: p.image || "/products/p1.jpg",
       price: p.price > 0 ? p.price : 19.99,
       sourceUrl: p.sourceUrl || window.location.href,
-      seller: "iTaoBuy Order",
+      seller: "",
       brand,
       category,
     };

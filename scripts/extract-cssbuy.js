@@ -212,7 +212,7 @@
             image,
             price,
             sourceUrl: sourceUrl || `https://www.cssbuy.com/shop/cate/order#${orderId}`,
-            seller: "CSSBuy Order",
+            seller: "",
           })
         );
       }
@@ -305,7 +305,7 @@
       image: p.image || "/products/p1.jpg",
       price: p.price > 0 ? p.price : 19.99,
       sourceUrl: p.sourceUrl || "https://www.cssbuy.com",
-      seller: p.seller || "CSSBuy Order",
+      seller: p.seller || "",
       brand,
       category,
     };

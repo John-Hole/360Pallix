@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { eur, type Product } from "@/lib/products";
 
@@ -130,7 +130,7 @@ const EXTRACTOR_SCRIPT = `(() => {
                     image,
                     price: price > 0 ? price : 19.99,
                     sourceUrl: sourceUrl || window.location.href,
-                    seller: rawSeller || "CSSBuy Order",
+                    seller: rawSeller || "",
                     brand: item.brand || "—",
                     category: "OTHER",
                   });
@@ -237,7 +237,7 @@ const EXTRACTOR_SCRIPT = `(() => {
         image: imageSrc,
         price: price > 0 ? price : 19.99,
         sourceUrl: sourceUrl || \`https://www.cssbuy.com/shop/cate/order#\${idx}\`,
-        seller: "CSSBuy Order",
+        seller: "",
         brand: "—",
         category: "OTHER",
       });
@@ -352,6 +352,19 @@ export default function AdminPage() {
   // Delete Modal State
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Prevent backdrop click dismiss on drag selection (when selecting text and releasing outside)
+  const editBackdropMouseDownRef = useRef(false);
+  const deleteBackdropMouseDownRef = useRef(false);
+
+  useEffect(() => {
+    const onMouseUp = () => {
+      editBackdropMouseDownRef.current = false;
+      deleteBackdropMouseDownRef.current = false;
+    };
+    window.addEventListener("mouseup", onMouseUp);
+    return () => window.removeEventListener("mouseup", onMouseUp);
+  }, []);
 
   // Close modals on Escape key
   useEffect(() => {
@@ -2152,11 +2165,23 @@ export default function AdminPage() {
               backdropFilter: "blur(10px)",
               animation: "fadeIn 0.2s ease-out",
             }}
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) {
+                editBackdropMouseDownRef.current = true;
+              }
+            }}
             onClick={(e) => {
-              if (e.target === e.currentTarget) closeEditModal();
+              if (editBackdropMouseDownRef.current && e.target === e.currentTarget) {
+                closeEditModal();
+              }
+              editBackdropMouseDownRef.current = false;
             }}
           >
             <div
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                editBackdropMouseDownRef.current = false;
+              }}
               style={{
                 width: "min(680px, 100%)",
                 maxHeight: "calc(100vh - 40px)",
@@ -2488,11 +2513,23 @@ export default function AdminPage() {
               background: "rgba(0,0,0,0.8)",
               backdropFilter: "blur(10px)",
             }}
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) {
+                deleteBackdropMouseDownRef.current = true;
+              }
+            }}
             onClick={(e) => {
-              if (e.target === e.currentTarget) setDeletingProduct(null);
+              if (deleteBackdropMouseDownRef.current && e.target === e.currentTarget) {
+                setDeletingProduct(null);
+              }
+              deleteBackdropMouseDownRef.current = false;
             }}
           >
             <div
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                deleteBackdropMouseDownRef.current = false;
+              }}
               style={{
                 width: "min(500px, 100%)",
                 borderRadius: 24,

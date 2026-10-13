@@ -12,6 +12,8 @@ export function isGarbageSeller(seller?: string): boolean {
   if (/^BBB[a-zA-Z0-9_\-]+$/i.test(s)) return true;
   if (/^tb\d+$/i.test(s)) return true;
   if (/^[a-zA-Z0-9_\-]{20,}$/.test(s)) return true;
+  if (/cssbuy|itaobuy|taobuy|\bcsb\b|\btaby\b|itaby/i.test(s)) return true;
+  if (/verified\s*order|order/i.test(s)) return true;
   return false;
 }
 
