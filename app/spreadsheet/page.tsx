@@ -6,7 +6,7 @@ import { PRODUCTS, eur, type Product } from "@/lib/products";
 const uniq = (k: keyof Product, items: Product[]) =>
   [...new Set(items.map((p) => String(p[k])))].filter(Boolean).sort();
 
-const PER_PAGE = [5, 10, 20, 50];
+const PER_PAGE = [10, 20, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
 
 export default function Spreadsheet() {
   const [allProducts, setAllProducts] = useState<Product[]>(PRODUCTS);
@@ -19,7 +19,7 @@ export default function Spreadsheet() {
   const [onlyFavs, setOnlyFavs] = useState(false);
   const [legal, setLegal] = useState(false);
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(PER_PAGE[0]);
+  const [perPage, setPerPage] = useState(50);
 
   useEffect(() => {
     setFavs(JSON.parse(localStorage.getItem("pallix-favs") || "[]"));
@@ -146,7 +146,7 @@ export default function Spreadsheet() {
             >
               {PER_PAGE.map((n) => (
                 <option key={n} value={n}>
-                  {n}
+                  {n.toLocaleString("it-IT")}
                 </option>
               ))}
             </select>

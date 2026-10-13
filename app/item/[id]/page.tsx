@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { promises as fs } from "fs";
-import path from "path";
-import { BASE_PRODUCTS, PRODUCTS, eur, type Product } from "@/lib/products";
+import { PRODUCTS, eur } from "@/lib/products";
+import { getProductById } from "@/lib/product-store";
 
 export const dynamicParams = true;
 
@@ -10,19 +9,9 @@ export function generateStaticParams() {
   return PRODUCTS.map((p) => ({ id: p.id }));
 }
 
-async function getProduct(id: string): Promise<Product | undefined> {
-  try {
-    const raw = await fs.readFile(path.join(process.cwd(), "data", "products.json"), "utf8");
-    const list = JSON.parse(raw) as Product[];
-    const found = list.find((x) => x.id === id);
-    if (found) return found;
-  } catch {}
-  return BASE_PRODUCTS.find((x) => x.id === id);
-}
-
 export default async function Item({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const p = await getProduct(id);
+  const p = await getProductById(id);
   if (!p) notFound();
 
   return (

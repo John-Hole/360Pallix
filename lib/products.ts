@@ -26,6 +26,10 @@ export const BASE_PRODUCTS: Product[] = [
   { id: "nike-kobe-413", title: "Nike Kobe (413)", seller: "Yolo66", category: "SNEAKERS", brand: "Nike", price: 54.79, image: "/products/p10.jpg" },
 ];
 
-export const PRODUCTS: Product[] = [...(extra as Product[]), ...BASE_PRODUCTS];
+const extraIds = new Set((extra as Product[]).map((p) => p.id));
+export const PRODUCTS: Product[] = [
+  ...(extra as Product[]),
+  ...BASE_PRODUCTS.filter((p) => !extraIds.has(p.id)),
+];
 
 export const eur = (n: number) => `€ ${n.toFixed(2)}`;

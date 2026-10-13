@@ -1,36 +1,44 @@
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
-import { BASE_PRODUCTS, Product } from "@/lib/products";
+import { Product } from "@/lib/products";
 import { formatDoppelfitLink, parseSourceUrl, cssbuyLink } from "@/lib/convert";
-
-const FILE = path.join(process.cwd(), "data", "products.json");
+import {
+  getAllProducts,
+  readRawProducts,
+  writeRawProducts,
+  readDeletedIds,
+  writeDeletedIds,
+  updateProduct,
+  deleteProduct,
+} from "@/lib/product-store";
 
 export async function GET() {
   try {
-    const raw = await fs.readFile(FILE, "utf8");
-    const extra = JSON.parse(raw) as Product[];
-    return NextResponse.json([...extra, ...BASE_PRODUCTS], {
+    const list = await getAllProducts();
+    return NextResponse.json(list, {
       headers: { "Cache-Control": "no-store, max-age=0" },
     });
-  } catch {
-    return NextResponse.json(BASE_PRODUCTS);
+  } catch (error) {
+    console.error("Errore lettura prodotti:", error);
+    return NextResponse.json([], { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  if (body.password !== (process.env.ADMIN_PASSWORD || "cambiami")) {
+  let body: any;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Corpo della richiesta JSON non valido" }, { status: 400 });
+  }
+
+  const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
+  if (body.password !== expectedPw) {
     return NextResponse.json({ error: "Password errata" }, { status: 401 });
   }
 
-  let list: Product[] = [];
-  try {
-    const raw = await fs.readFile(FILE, "utf8");
-    list = JSON.parse(raw);
-  } catch {
-    list = [];
-  }
+  let list = await readRawProducts();
+  const deletedIds = await readDeletedIds();
+  let deletedModified = false;
 
   // Supporto importazione massiva (batch import)
   if (Array.isArray(body.products)) {
@@ -47,7 +55,10 @@ export async function POST(req: Request) {
             cssbuyUrl = cssbuyLink(parsed);
           } else if (item.sourceUrl.includes("cssbuy.com")) {
             const u = new URL(item.sourceUrl);
-            u.searchParams.set("promotionCode", process.env.CSSBUY_PROMOTION_CODE || "2ab90a34eeaa437b");
+            u.searchParams.set(
+              "promotionCode",
+              process.env.CSSBUY_PROMOTION_CODE || "2ab90a34eeaa437b"
+            );
             cssbuyUrl = u.toString();
           }
         } catch {
@@ -61,8 +72,17 @@ export async function POST(req: Request) {
         .replace(/^-|-$/g, "")
         .slice(0, 36);
 
+      const id =
+        item.id ||
+        `${slug}-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+
+      if (deletedIds.has(id)) {
+        deletedIds.delete(id);
+        deletedModified = true;
+      }
+
       const p: Product = {
-        id: item.id || `${slug}-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
+        id,
         title: item.title,
         seller: item.seller || "—",
         category: item.category || "OTHER",
@@ -81,9 +101,13 @@ export async function POST(req: Request) {
 
     // Aggiungi in testa alla lista
     list = [...imported, ...list];
-    await fs.writeFile(FILE, JSON.stringify(list, null, 2), "utf8");
+    await writeRawProducts(list);
+    if (deletedModified) {
+      await writeDeletedIds(deletedIds);
+    }
 
-    return NextResponse.json({ ok: true, count: imported.length, total: list.length });
+    const totalActive = (await getAllProducts()).length;
+    return NextResponse.json({ ok: true, count: imported.length, total: totalActive });
   }
 
   // Inserimento singolo standard
@@ -97,8 +121,15 @@ export async function POST(req: Request) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
+  const id = body.id || `${slug}-${Date.now().toString(36)}`;
+
+  if (deletedIds.has(id)) {
+    deletedIds.delete(id);
+    await writeDeletedIds(deletedIds);
+  }
+
   const product: Product = {
-    id: `${slug}-${Date.now().toString(36)}`,
+    id,
     title: body.title,
     seller: body.seller || "—",
     category: body.category || "OTHER",
@@ -110,7 +141,57 @@ export async function POST(req: Request) {
   };
 
   list.unshift(product);
-  await fs.writeFile(FILE, JSON.stringify(list, null, 2), "utf8");
+  await writeRawProducts(list);
 
   return NextResponse.json({ ok: true, product });
+}
+
+export async function PUT(req: Request) {
+  let body: any;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Corpo della richiesta JSON non valido" }, { status: 400 });
+  }
+
+  const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
+  if (body.password !== expectedPw) {
+    return NextResponse.json({ error: "Password admin errata" }, { status: 401 });
+  }
+
+  if (!body.id) {
+    return NextResponse.json({ error: "ID prodotto mancante" }, { status: 400 });
+  }
+
+  const updated = await updateProduct(body.id, body);
+  if (!updated) {
+    return NextResponse.json({ error: "Prodotto non trovato per la modifica" }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true, product: updated });
+}
+
+export async function DELETE(req: Request) {
+  let body: any;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Corpo della richiesta JSON non valido" }, { status: 400 });
+  }
+
+  const expectedPw = process.env.ADMIN_PASSWORD || "cambiami";
+  if (body.password !== expectedPw) {
+    return NextResponse.json({ error: "Password admin errata" }, { status: 401 });
+  }
+
+  if (!body.id) {
+    return NextResponse.json({ error: "ID prodotto mancante" }, { status: 400 });
+  }
+
+  const success = await deleteProduct(body.id);
+  if (!success) {
+    return NextResponse.json({ error: "Prodotto non trovato o già eliminato" }, { status: 404 });
+  }
+
+  return NextResponse.json({ ok: true, id: body.id, message: "Prodotto eliminato con successo" });
 }
