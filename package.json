@@ -6,7 +6,8 @@
     "dev": "next dev --webpack -p 3000",
     "build": "next build --webpack",
     "start": "next start -p 3000",
-    "bot": "node scripts/bot.js"
+    "bot": "node scripts/bot.js",
+    "scrape": "node scripts/auto-scraper.js"
   },
   "dependencies": {
     "@types/node": "^26.6.5",
