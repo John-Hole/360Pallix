@@ -269,18 +269,30 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "ID prodotto mancante" }, { status: 400 });
   }
 
-  const cleanId = decodeURIComponent(String(id)).trim();
+  let cleanId = String(id).trim();
+  try {
+    cleanId = decodeURIComponent(String(id)).trim();
+  } catch {}
+
   const success = await deleteProduct(cleanId);
   if (!success) {
-    return NextResponse.json({ error: "Prodotto non trovato o già eliminato" }, { status: 404 });
+    return NextResponse.json({ error: "Prodotto non trovato o impossibile eliminare" }, { status: 404 });
   }
 
   try {
     revalidatePath("/", "layout");
     revalidatePath("/spreadsheet");
     revalidatePath("/admin");
-    revalidatePath(`/item/${cleanId}`);
+    revalidatePath(`/item/${encodeURIComponent(cleanId)}`);
   } catch {}
 
-  return NextResponse.json({ ok: true, id: cleanId, message: "Prodotto eliminato con successo" });
+  return NextResponse.json(
+    { ok: true, id: cleanId, message: "Prodotto eliminato con successo" },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+      },
+    }
+  );
 }

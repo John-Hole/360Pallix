@@ -72,8 +72,16 @@ export async function PUT(req: Request, context: RouteContext) {
 }
 
 export async function DELETE(req: Request, context: RouteContext) {
-  const { id } = await context.params;
-  const cleanId = decodeURIComponent(id).trim();
+  let paramId = "";
+  try {
+    const params = await context.params;
+    paramId = params?.id || "";
+  } catch {}
+
+  let cleanId = paramId;
+  try {
+    cleanId = decodeURIComponent(paramId).trim();
+  } catch {}
 
   let bodyPassword = "";
   let bodyId = "";
@@ -100,15 +108,23 @@ export async function DELETE(req: Request, context: RouteContext) {
 
   const success = await deleteProduct(targetId);
   if (!success) {
-    return NextResponse.json({ error: "Prodotto non trovato o già eliminato" }, { status: 404 });
+    return NextResponse.json({ error: "Prodotto non trovato o impossibile eliminare" }, { status: 404 });
   }
 
   try {
     revalidatePath("/", "layout");
     revalidatePath("/spreadsheet");
     revalidatePath("/admin");
-    revalidatePath(`/item/${cleanId}`);
+    revalidatePath(`/item/${encodeURIComponent(targetId)}`);
   } catch {}
 
-  return NextResponse.json({ ok: true, id: cleanId, message: "Prodotto eliminato con successo" });
+  return NextResponse.json(
+    { ok: true, id: targetId, message: "Prodotto eliminato con successo" },
+    {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        Pragma: "no-cache",
+      },
+    }
+  );
 }

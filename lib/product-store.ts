@@ -198,15 +198,6 @@ export async function deleteProduct(id: string): Promise<boolean> {
     readDeletedIds(),
   ]);
 
-  // Check if it was already deleted
-  let alreadyDeleted = false;
-  for (const tid of targetIds) {
-    if (deletedIds.has(tid)) {
-      alreadyDeleted = true;
-      break;
-    }
-  }
-
   const matchFn = (p: Product) => {
     const pid = String(p.id || "").trim();
     let pidDecoded = pid;
@@ -221,25 +212,27 @@ export async function deleteProduct(id: string): Promise<boolean> {
     );
   };
 
-  const wasInExtra = extra.some(matchFn);
-  const wasInBase = BASE_PRODUCTS.some(matchFn);
-
-  // If already deleted and not in extra, return false (already deleted)
-  if (alreadyDeleted && !wasInExtra) {
-    return false;
+  const matchedIds: string[] = [];
+  for (const p of extra) {
+    if (matchFn(p)) {
+      matchedIds.push(String(p.id).trim());
+    }
   }
-
-  // If not found in extra or base, return false
-  if (!wasInExtra && !wasInBase) {
-    return false;
+  for (const p of BASE_PRODUCTS) {
+    if (matchFn(p)) {
+      matchedIds.push(String(p.id).trim());
+    }
   }
 
   // Remove any matching items from extra
   const newExtra = extra.filter((p) => !matchFn(p));
 
-  // Always register in deletedIds so it never resurfaces from BASE_PRODUCTS
-  for (const tid of targetIds) {
-    deletedIds.add(tid);
+  // Always register targetIds and any matchedIds in deletedIds
+  for (const tid of [...targetIds, ...matchedIds]) {
+    if (tid) {
+      deletedIds.add(tid);
+      deletedIds.add(tid.toLowerCase());
+    }
   }
 
   // Write both files
