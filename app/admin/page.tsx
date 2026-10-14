@@ -87,6 +87,17 @@ export default function AdminPage() {
   const [filterCategory, setFilterCategory] = useState("");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(50);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  // Read saved view mode on mount
+  useEffect(() => {
+    try {
+      const savedView = localStorage.getItem("pallix-admin-view");
+      if (savedView === "list" || savedView === "grid") {
+        setViewMode(savedView);
+      }
+    } catch {}
+  }, []);
 
   // Edit Modal State
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -747,82 +758,234 @@ export default function AdminPage() {
                     ))}
                   </select>
                 </label>
+
+                {/* SWITCHER VISTA GRIGLIA / LISTA */}
+                <div className="view-switcher" title="Modalità di visualizzazione">
+                  <button
+                    type="button"
+                    className={`view-btn ${viewMode === "grid" ? "active" : ""}`}
+                    onClick={() => {
+                      setViewMode("grid");
+                      try {
+                        localStorage.setItem("pallix-admin-view", "grid");
+                      } catch {}
+                    }}
+                    title="Vista a griglia (card)"
+                  >
+                    <span>⊞</span>
+                    <span>Griglia</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`view-btn ${viewMode === "list" ? "active" : ""}`}
+                    onClick={() => {
+                      setViewMode("list");
+                      try {
+                        localStorage.setItem("pallix-admin-view", "list");
+                      } catch {}
+                    }}
+                    title="Vista a lista (tabella)"
+                  >
+                    <span>☰</span>
+                    <span>Lista</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* GRIGLIA PRODOTTI (.grid e .card) */}
-            <div className="grid">
-              {visibleProducts.map((p, i) => (
-                <div
-                  key={p.id}
-                  className="card"
-                  style={{ animationDelay: `${(i % 24) * 30}ms` }}
-                >
-                  <div className="card-media">
-                    <img
-                      src={p.image}
-                      alt={p.title}
-                      loading="lazy"
-                      draggable={false}
-                      onError={(e) => {
-                        (e.currentTarget as HTMLImageElement).src =
-                          "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='370' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='14'%3EImmagine non disp.%3C/text%3E%3C/svg%3E";
-                      }}
-                    />
-                    <div className="price">
-                      <span>{eur(p.price)}</span>
-                      <span className="price-rmb" title="Prezzo originale in Yuan (¥)">
-                        {rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}
-                      </span>
-                    </div>
+            {/* VISTA CATALOGO: LISTA (TABELLA) OPPURE GRIGLIA (CARD) */}
+            {viewMode === "list" ? (
+              <div className="table-wrap">
+                <table className="sheet-table">
+                  <thead>
+                    <tr>
+                      <th style={{ width: 70 }}>Foto</th>
+                      <th>Titolo & ID</th>
+                      <th style={{ width: 140 }}>Categoria</th>
+                      <th style={{ width: 140 }}>Brand & Seller</th>
+                      <th style={{ width: 130 }}>Prezzo</th>
+                      <th style={{ width: 160 }}>Affiliazioni</th>
+                      <th style={{ width: 180, textAlign: "right" }}>Azioni</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleProducts.map((p) => (
+                      <tr key={p.id} className="sheet-table-row">
+                        <td>
+                          <div className="table-thumb">
+                            <img
+                              src={p.image}
+                              alt={p.title}
+                              loading="lazy"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLImageElement).src =
+                                  "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='10'%3EN/D%3C/text%3E%3C/svg%3E";
+                              }}
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <Link
+                            href={`/item/${encodeURIComponent(p.id)}`}
+                            target="_blank"
+                            className="table-title-link"
+                            title="Apri scheda prodotto in una nuova scheda"
+                            style={{ display: "inline-block" }}
+                          >
+                            <div className="table-title">{p.title}</div>
+                          </Link>
+                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", fontFamily: "monospace", marginTop: 4 }}>
+                            {p.id}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="table-cat">{p.category}</span>
+                        </td>
+                        <td>
+                          <div style={{ fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
+                            {p.brand && p.brand !== "—" ? p.brand : "—"}
+                          </div>
+                          <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>
+                            {p.seller && p.seller !== "—" && p.seller !== "-" ? `👤 ${p.seller}` : "—"}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="table-price">{eur(p.price)}</div>
+                          <div className="table-price-rmb">
+                            ¥ {p.priceRmb ?? Math.round(p.price * RMB_TO_EUR)}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="table-aff">
+                            {p.cssbuyUrl ? (
+                              <a
+                                href={p.cssbuyUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="table-aff-link table-aff-cssbuy"
+                                title="Apri link affiliato CSSBuy"
+                              >
+                                CSSBuy ↗
+                              </a>
+                            ) : (
+                              <span style={{ fontSize: 10.5, color: "rgba(255,255,255,0.3)" }}>—</span>
+                            )}
+                            {p.doppelfitUrl && (
+                              <a
+                                href={p.doppelfitUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="table-aff-link table-aff-doppel"
+                                title="Apri link Doppelfit"
+                              >
+                                Doppelfit ↗
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <div className="table-actions" style={{ justifyContent: "flex-end" }}>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn-edit"
+                              onClick={() => openEditModal(p)}
+                              title="Modifica dati del prodotto"
+                            >
+                              ✏️ Modifica
+                            </button>
+                            <button
+                              type="button"
+                              className="admin-btn admin-btn-del"
+                              onClick={() => setDeletingProduct(p)}
+                              title="Elimina questo prodotto"
+                            >
+                              🗑️ Elimina
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {!filteredProducts.length && !catalogLoading && (
+                  <div className="empty">Nessun prodotto trovato per i criteri selezionati.</div>
+                )}
+              </div>
+            ) : (
+              /* GRIGLIA PRODOTTI (.grid e .card) */
+              <div className="grid">
+                {visibleProducts.map((p, i) => (
+                  <div
+                    key={p.id}
+                    className="card"
+                    style={{ animationDelay: `${(i % 24) * 30}ms` }}
+                  >
+                    <div className="card-media">
+                      <img
+                        src={p.image}
+                        alt={p.title}
+                        loading="lazy"
+                        draggable={false}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src =
+                            "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='370' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='14'%3EImmagine non disp.%3C/text%3E%3C/svg%3E";
+                        }}
+                      />
+                      <div className="price">
+                        <span>{eur(p.price)}</span>
+                        <span className="price-rmb" title="Prezzo originale in Yuan (¥)">
+                          {rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}
+                        </span>
+                      </div>
 
-                    <Link
-                      href={`/item/${encodeURIComponent(p.id)}`}
-                      target="_blank"
-                      className="admin-card-view"
-                      title="Visualizza scheda prodotto in nuova scheda"
-                    >
-                      ↗
-                    </Link>
-                  </div>
-
-                  <div className="card-body">
-                    <div className="card-title" title={p.title}>
-                      {p.title}
-                    </div>
-                    <div className="card-meta">
-                      {p.seller && p.seller !== "—" && p.seller !== "-" ? `${p.seller} • ` : ""}
-                      {p.category}
-                      {p.brand && p.brand !== "—" ? ` • ${p.brand}` : ""}
-                    </div>
-
-                    {/* AZIONI AMMINISTRATIVE INTEGRATE SU OGNI CARD */}
-                    <div className="admin-actions">
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn-edit"
-                        onClick={() => openEditModal(p)}
-                        title="Modifica dati del prodotto"
+                      <Link
+                        href={`/item/${encodeURIComponent(p.id)}`}
+                        target="_blank"
+                        className="admin-card-view"
+                        title="Visualizza scheda prodotto in nuova scheda"
                       >
-                        ✏️ Modifica
-                      </button>
-                      <button
-                        type="button"
-                        className="admin-btn admin-btn-del"
-                        onClick={() => setDeletingProduct(p)}
-                        title="Elimina questo prodotto"
-                      >
-                        🗑️ Elimina
-                      </button>
+                        ↗
+                      </Link>
+                    </div>
+
+                    <div className="card-body">
+                      <div className="card-title" title={p.title}>
+                        {p.title}
+                      </div>
+                      <div className="card-meta">
+                        {p.seller && p.seller !== "—" && p.seller !== "-" ? `${p.seller} • ` : ""}
+                        {p.category}
+                        {p.brand && p.brand !== "—" ? ` • ${p.brand}` : ""}
+                      </div>
+
+                      {/* AZIONI AMMINISTRATIVE INTEGRATE SU OGNI CARD */}
+                      <div className="admin-actions">
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-edit"
+                          onClick={() => openEditModal(p)}
+                          title="Modifica dati del prodotto"
+                        >
+                          ✏️ Modifica
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-btn admin-btn-del"
+                          onClick={() => setDeletingProduct(p)}
+                          title="Elimina questo prodotto"
+                        >
+                          🗑️ Elimina
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
-              {!filteredProducts.length && !catalogLoading && (
-                <div className="empty">Nessun prodotto trovato per i criteri selezionati.</div>
-              )}
-            </div>
+                {!filteredProducts.length && !catalogLoading && (
+                  <div className="empty">Nessun prodotto trovato per i criteri selezionati.</div>
+                )}
+              </div>
+            )}
 
             {/* PAGINAZIONE (.pager) */}
             {totalPages > 1 && (
