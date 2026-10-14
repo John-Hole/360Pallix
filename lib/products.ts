@@ -32,12 +32,23 @@ export const BASE_PRODUCTS: Product[] = [
   { id: "nike-kobe-413", title: "Nike Kobe (413)", seller: "YOLO66", category: "SNEAKERS", brand: "Nike", price: 54.79, priceRmb: 427, image: "/products/p10.jpg" },
 ];
 
-const deletedSet = new Set(Array.isArray(deletedIds) ? (deletedIds as string[]).map((id) => String(id).trim().toLowerCase()) : []);
-const extraIds = new Set((extra as Product[]).map((p) => String(p.id).trim().toLowerCase()));
+const normalizeId = (id: string) => {
+  try {
+    return decodeURIComponent(String(id)).trim().toLowerCase();
+  } catch {
+    return String(id).trim().toLowerCase();
+  }
+};
+
+const deletedSet = new Set(
+  Array.isArray(deletedIds) ? (deletedIds as string[]).map(normalizeId) : []
+);
+const extraIds = new Set((extra as Product[]).map((p) => normalizeId(p.id)));
 export const PRODUCTS: Product[] = [
   ...(extra as Product[]),
-  ...BASE_PRODUCTS.filter((p) => !extraIds.has(String(p.id).trim().toLowerCase())),
-].filter((p) => !deletedSet.has(String(p.id).trim().toLowerCase()));
+  ...BASE_PRODUCTS.filter((p) => !extraIds.has(normalizeId(p.id))),
+].filter((p) => !deletedSet.has(normalizeId(p.id)));
+
 
 /**
  * Synchronizes the in-memory PRODUCTS array with active products from product-store.

@@ -99,16 +99,43 @@ export async function DELETE(req: Request, context: RouteContext) {
   const targetId = cleanId || searchParams.get("id") || bodyId;
 
   if (!isAuthorized(req, paramPw)) {
-    return NextResponse.json({ error: "Accesso non autorizzato" }, { status: 401 });
+    return NextResponse.json(
+      { error: "Accesso non autorizzato" },
+      {
+        status: 401,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+        },
+      }
+    );
   }
 
   if (!targetId) {
-    return NextResponse.json({ error: "ID prodotto mancante" }, { status: 400 });
+    return NextResponse.json(
+      { error: "ID prodotto mancante" },
+      {
+        status: 400,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+        },
+      }
+    );
   }
 
   const success = await deleteProduct(targetId);
   if (!success) {
-    return NextResponse.json({ error: "Prodotto non trovato o impossibile eliminare" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Prodotto non trovato o impossibile eliminare" },
+      {
+        status: 404,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          Pragma: "no-cache",
+        },
+      }
+    );
   }
 
   try {

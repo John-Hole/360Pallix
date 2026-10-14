@@ -11,6 +11,7 @@ import {
   updateProduct,
   deleteProduct,
   sanitizeSeller,
+  normalizeProductId,
 } from "@/lib/product-store";
 import { isAuthorized } from "@/lib/auth";
 
@@ -84,8 +85,9 @@ export async function POST(req: Request) {
         item.id ||
         `${slug}-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
 
-      if (deletedIds.has(id)) {
-        deletedIds.delete(id);
+      const normId = normalizeProductId(id);
+      if (deletedIds.has(normId)) {
+        deletedIds.delete(normId);
         deletedModified = true;
       }
 
@@ -147,8 +149,9 @@ export async function POST(req: Request) {
 
   const id = body.id || `${slug}-${Date.now().toString(36)}`;
 
-  if (deletedIds.has(id)) {
-    deletedIds.delete(id);
+  const normId = normalizeProductId(id);
+  if (deletedIds.has(normId)) {
+    deletedIds.delete(normId);
     await writeDeletedIds(deletedIds);
   }
 

@@ -14,6 +14,8 @@ const CATEGORIES = [
   "OTHER",
 ] as const;
 
+const PER_PAGE_OPTIONS = [10, 20, 50, 100, 250, 500];
+
 const emptyProductForm = {
   title: "",
   image: "",
@@ -26,17 +28,31 @@ const emptyProductForm = {
   doppelfitUrl: "",
 };
 
-
 type Toast = {
   id: string;
   type: "success" | "error" | "info";
   message: string;
 };
 
-export default function AdminPage() {
-  const [tab, setTab] = useState<"catalog" | "single">("catalog");
+const normalizeId = (id: string) => {
+  try {
+    let s = String(id).trim();
+    while (s.includes("%")) {
+      const decoded = decodeURIComponent(s).trim();
+      if (decoded === s) break;
+      s = decoded;
+    }
+    return s.toLowerCase().trim();
+  } catch {
+    return String(id).trim().toLowerCase();
+  }
+};
 
-  // Toast feedback state
+export default function AdminPage() {
+  // Navigation Tab State
+  const [tab, setTab] = useState<"catalog" | "insert">("catalog");
+
+  // Toast Feedback State
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = (type: "success" | "error" | "info", message: string) => {
@@ -51,7 +67,7 @@ export default function AdminPage() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Generate local auth cookie session on mount
+  // Auth setup on mount
   useEffect(() => {
     try {
       document.cookie = "pallix_admin_auth=authenticated_360pallix; path=/; max-age=31536000; SameSite=Lax";
@@ -64,13 +80,13 @@ export default function AdminPage() {
   // ----------------------------------------------------
   const [products, setProducts] = useState<Product[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(false);
-  const [catalogSearch, setCatalogSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterBrand, setFilterBrand] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterOrder, setFilterOrder] = useState("");
   const [filterSeller, setFilterSeller] = useState("");
-  const [sortBy, setSortBy] = useState<"newest" | "price-asc" | "price-desc" | "title">("newest");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [perPage, setPerPage] = useState(24);
+  const [filterBrand, setFilterBrand] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(50);
 
   // Edit Modal State
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -82,7 +98,7 @@ export default function AdminPage() {
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  // Prevent backdrop click dismiss on drag selection (when selecting text and releasing outside)
+  // Backdrop drag guard
   const editBackdropMouseDownRef = useRef(false);
   const deleteBackdropMouseDownRef = useRef(false);
 
@@ -95,7 +111,7 @@ export default function AdminPage() {
     return () => window.removeEventListener("mouseup", onMouseUp);
   }, []);
 
-  // Close modals on Escape key
+  // Close modals on Escape
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -107,8 +123,8 @@ export default function AdminPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [editingProduct, deletingProduct]);
 
-  // Image Upload handler
-  const handleUploadImage = async (file: File, target: "edit" | "single") => {
+  // Image Upload handler (supports both edit modal and insert form)
+  const handleUploadImage = async (file: File, target: "edit" | "insert") => {
     if (!file.type.startsWith("image/")) {
       addToast("error", "Seleziona un file immagine valido (JPG, PNG, WEBP, GIF)");
       return;
@@ -120,9 +136,7 @@ export default function AdminPage() {
 
       const res = await fetch("/api/upload", {
         method: "POST",
-        headers: {
-          "x-admin-auth": "1",
-        },
+        headers: { "x-admin-auth": "1" },
         credentials: "include",
         body: fd,
       });
@@ -134,7 +148,7 @@ export default function AdminPage() {
       if (target === "edit") {
         setEditForm((prev) => ({ ...prev, image: data.url }));
       } else {
-        setF((prev) => ({ ...prev, image: data.url }));
+        setInsertForm((prev) => ({ ...prev, image: data.url }));
       }
       addToast("success", "Foto caricata con successo dal computer!");
     } catch {
@@ -148,7 +162,7 @@ export default function AdminPage() {
   const loadProducts = async () => {
     setCatalogLoading(true);
     try {
-      const res = await fetch("/api/products", { cache: "no-store" });
+      const res = await fetch(`/api/products?t=${Date.now()}`, { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -168,55 +182,65 @@ export default function AdminPage() {
     loadProducts();
   }, []);
 
-  // Unique lists for filters
+  // Dynamic filter lists
   const uniqueBrands = useMemo(() => {
-    return [...new Set(products.map((p) => p.brand).filter((b) => b && b !== "—"))].sort();
+    return [...new Set(products.map((p) => p.brand).filter((b) => b && b !== "—" && b !== "-"))].sort();
   }, [products]);
 
   const uniqueSellers = useMemo(() => {
     return [...new Set(products.map((p) => p.seller).filter((s) => s && s !== "—" && s !== "-"))].sort();
   }, [products]);
 
-  // Filtered & sorted product list
+  // Filtered and sorted catalog
   const filteredProducts = useMemo(() => {
     let list = products.filter((p) => {
-      if (catalogSearch) {
-        const term = catalogSearch.toLowerCase();
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
         const fullText = `${p.title} ${p.brand} ${p.seller} ${p.category} ${p.id}`.toLowerCase();
-        if (!fullText.includes(term)) return false;
+        if (!fullText.includes(q)) return false;
       }
-      if (filterCategory && p.category !== filterCategory) return false;
-      if (filterBrand && p.brand !== filterBrand) return false;
       if (filterSeller && p.seller !== filterSeller) return false;
+      if (filterBrand && p.brand !== filterBrand) return false;
+      if (filterCategory && p.category !== filterCategory) return false;
       return true;
     });
 
-    if (sortBy === "price-asc") {
+    if (filterOrder === "asc") {
       list = [...list].sort((a, b) => a.price - b.price);
-    } else if (sortBy === "price-desc") {
+    } else if (filterOrder === "desc") {
       list = [...list].sort((a, b) => b.price - a.price);
-    } else if (sortBy === "title") {
+    } else if (filterOrder === "title") {
       list = [...list].sort((a, b) => a.title.localeCompare(b.title));
     }
-    // "newest" preserves original array order
+
     return list;
-  }, [products, catalogSearch, filterCategory, filterBrand, filterSeller, sortBy]);
+  }, [products, searchQuery, filterOrder, filterSeller, filterBrand, filterCategory]);
 
   // Pagination calculation
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / perPage));
-  const activePage = Math.min(currentPage, totalPages);
-  const paginatedProducts = useMemo(() => {
-    const start = (activePage - 1) * perPage;
+  const curPage = Math.min(page, totalPages);
+  const visibleProducts = useMemo(() => {
+    const start = (curPage - 1) * perPage;
     return filteredProducts.slice(start, start + perPage);
-  }, [filteredProducts, activePage, perPage]);
+  }, [filteredProducts, curPage, perPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, filterOrder, filterSeller, filterBrand, filterCategory]);
 
   const resetFilters = () => {
-    setCatalogSearch("");
-    setFilterCategory("");
-    setFilterBrand("");
+    setSearchQuery("");
+    setFilterOrder("");
     setFilterSeller("");
-    setSortBy("newest");
-    setCurrentPage(1);
+    setFilterBrand("");
+    setFilterCategory("");
+    setPage(1);
+  };
+
+  const goPage = (n: number) => {
+    setPage(n);
+    window.scrollTo({ top: 120, behavior: "smooth" });
   };
 
   // Open Edit Modal
@@ -252,7 +276,9 @@ export default function AdminPage() {
       return;
     }
 
-    const priceRmb = editForm.priceRmb ? parseFloat(String(editForm.priceRmb).replace(",", ".")) : Math.round(price * RMB_TO_EUR);
+    const priceRmb = editForm.priceRmb
+      ? parseFloat(String(editForm.priceRmb).replace(",", "."))
+      : Math.round(price * RMB_TO_EUR);
 
     setEditLoading(true);
     try {
@@ -267,7 +293,7 @@ export default function AdminPage() {
           ...editForm,
           title: editForm.title.trim(),
           image: editForm.image.trim(),
-          brand: editForm.brand.trim(),
+          brand: editForm.brand.trim() || "—",
           seller: editForm.seller.trim(),
           price,
           priceRmb: !isNaN(priceRmb) && priceRmb > 0 ? priceRmb : Math.round(price * RMB_TO_EUR),
@@ -276,7 +302,7 @@ export default function AdminPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        addToast("error", data.error || "Errore durante il salvataggio");
+        addToast("error", data.error || "Errore durante il salvataggio delle modifiche");
         return;
       }
 
@@ -296,10 +322,11 @@ export default function AdminPage() {
   // Delete Product
   const handleDeleteProduct = async () => {
     if (!deletingProduct) return;
+    const targetId = deletingProduct.id;
 
     setDeleteLoading(true);
     try {
-      const res = await fetch(`/api/products/${encodeURIComponent(deletingProduct.id)}`, {
+      const res = await fetch(`/api/products/${encodeURIComponent(targetId)}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -314,8 +341,11 @@ export default function AdminPage() {
         return;
       }
 
-      addToast("success", `Prodotto eliminato con successo!`);
-      setProducts((prev) => prev.filter((p) => p.id !== deletingProduct.id));
+      addToast("success", "Prodotto eliminato con successo!");
+      // Update local state immediately
+      setProducts((prev) =>
+        prev.filter((p) => p.id !== targetId && normalizeId(p.id) !== normalizeId(targetId))
+      );
       setDeletingProduct(null);
     } catch {
       addToast("error", "Errore di connessione durante l'eliminazione");
@@ -325,29 +355,28 @@ export default function AdminPage() {
   };
 
   // ----------------------------------------------------
-  // SINGLE PRODUCT INSERTION STATE
+  // INSERT PRODUCT STATE
   // ----------------------------------------------------
-  const [url, setUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [f, setF] = useState(emptyProductForm);
-  const [ready, setReady] = useState(false);
+  const [convertUrl, setConvertUrl] = useState("");
+  const [convertLoading, setConvertLoading] = useState(false);
+  const [insertSaving, setInsertSaving] = useState(false);
+  const [insertForm, setInsertForm] = useState(emptyProductForm);
 
-  const setField =
+  const setInsertField =
     (k: keyof typeof emptyProductForm) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      setF((prev) => ({ ...prev, [k]: e.target.value }));
+      setInsertForm((prev) => ({ ...prev, [k]: e.target.value }));
     };
 
   async function handleConvert(e: React.FormEvent) {
     e.preventDefault();
-    if (!url.trim()) return;
-    setLoading(true);
+    if (!convertUrl.trim()) return;
+    setConvertLoading(true);
     try {
       const r = await fetch("/api/convert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: url.trim() }),
+        body: JSON.stringify({ url: convertUrl.trim() }),
       });
       const d = await r.json();
       if (!r.ok) {
@@ -355,8 +384,13 @@ export default function AdminPage() {
         return;
       }
       const pNum = parseFloat(String(d.price || "").replace(",", "."));
-      const rmbVal = d.priceRmb ? String(d.priceRmb) : (!isNaN(pNum) && pNum > 0 ? String(Math.round(pNum * RMB_TO_EUR)) : "");
-      setF({
+      const rmbVal = d.priceRmb
+        ? String(d.priceRmb)
+        : !isNaN(pNum) && pNum > 0
+        ? String(Math.round(pNum * RMB_TO_EUR))
+        : "";
+
+      setInsertForm({
         ...emptyProductForm,
         title: d.title || "",
         image: d.image || "",
@@ -364,22 +398,31 @@ export default function AdminPage() {
         priceRmb: rmbVal,
         cssbuyUrl: d.cssbuyUrl || "",
         doppelfitUrl: d.doppelfitUrl || "",
+        category: "OTHER",
+        brand: "",
+        seller: "",
       });
-      setReady(true);
+
       addToast(
         "success",
-        `Link riconosciuto (${d.platform.toUpperCase()})! Link affiliati CSSBuy e Doppelfit generati.`
+        `Link riconosciuto (${d.platform?.toUpperCase() || "OK"})! Campi e link affiliati compilati automaticamente.`
       );
     } catch {
       addToast("error", "Impossibile contattare il server per la conversione");
     } finally {
-      setLoading(false);
+      setConvertLoading(false);
     }
   }
 
-  async function handleSaveSingle(e: React.FormEvent) {
+  async function handleSaveInsert(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
+    const price = parseFloat(String(insertForm.price).replace(",", "."));
+    if (!insertForm.title.trim() || !insertForm.image.trim() || isNaN(price) || price <= 0) {
+      addToast("error", "Titolo, immagine e prezzo valido (> 0) sono obbligatori");
+      return;
+    }
+
+    setInsertSaving(true);
     try {
       const r = await fetch("/api/products", {
         method: "POST",
@@ -388,47 +431,28 @@ export default function AdminPage() {
           "x-admin-auth": "1",
         },
         credentials: "include",
-        body: JSON.stringify(f),
+        body: JSON.stringify(insertForm),
       });
       const d = await r.json();
       if (!r.ok) {
-        addToast("error", d.error || "Errore durante il salvataggio");
+        addToast("error", d.error || "Errore durante il salvataggio del prodotto");
         return;
       }
+
       addToast("success", `Prodotto "${d.product.title}" aggiunto con successo al catalogo!`);
-      setUrl("");
-      setF(emptyProductForm);
-      setReady(false);
-      // Reload products list and switch to catalog tab
-      loadProducts();
+      // Update local catalog state immediately
+      setProducts((prev) => [d.product, ...prev]);
+      // Reset form
+      setConvertUrl("");
+      setInsertForm(emptyProductForm);
+      // Switch back to catalog tab to see new product
       setTab("catalog");
     } catch {
       addToast("error", "Errore di connessione durante il salvataggio");
     } finally {
-      setSaving(false);
+      setInsertSaving(false);
     }
   }
-
-
-  // Category badge colors
-  const getCategoryColor = (cat: string) => {
-    switch (cat) {
-      case "SNEAKERS":
-        return { bg: "rgba(56, 189, 248, 0.15)", border: "rgba(56, 189, 248, 0.35)", color: "#38bdf8" };
-      case "HOODIE":
-        return { bg: "rgba(167, 139, 250, 0.15)", border: "rgba(167, 139, 250, 0.35)", color: "#a78bfa" };
-      case "TSHIRT":
-        return { bg: "rgba(52, 211, 153, 0.15)", border: "rgba(52, 211, 153, 0.35)", color: "#34d399" };
-      case "PANTS":
-        return { bg: "rgba(251, 191, 36, 0.15)", border: "rgba(251, 191, 36, 0.35)", color: "#fbbf24" };
-      case "JACKET":
-        return { bg: "rgba(244, 114, 182, 0.15)", border: "rgba(244, 114, 182, 0.35)", color: "#f472b6" };
-      case "ACCESSORIES":
-        return { bg: "rgba(251, 146, 60, 0.15)", border: "rgba(251, 146, 60, 0.35)", color: "#fb923c" };
-      default:
-        return { bg: "rgba(148, 163, 184, 0.15)", border: "rgba(148, 163, 184, 0.35)", color: "#94a3b8" };
-    }
-  };
 
   return (
     <main
@@ -436,11 +460,10 @@ export default function AdminPage() {
         minHeight: "100vh",
         background: "#08080a",
         color: "#fff",
-        padding: "32px 20px 80px",
         position: "relative",
       }}
     >
-      {/* Background radial atmosphere */}
+      {/* Background atmosphere */}
       <div
         style={{
           position: "fixed",
@@ -452,17 +475,18 @@ export default function AdminPage() {
         }}
       />
 
-      <div style={{ maxWidth: 1400, margin: "0 auto", position: "relative", zIndex: 1 }}>
-        {/* TOP BAR / NAVIGATION */}
-        <div
+      <div style={{ position: "relative", zIndex: 1 }}>
+        {/* HEADER / NAVIGATION */}
+        <header
           style={{
+            maxWidth: 1700,
+            margin: "0 auto",
+            padding: "24px 20px 16px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
             flexWrap: "wrap",
             gap: 16,
-            marginBottom: 24,
-            paddingBottom: 20,
             borderBottom: "1px solid rgba(255,255,255,0.08)",
           }}
         >
@@ -470,7 +494,7 @@ export default function AdminPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <h1
                 style={{
-                  fontSize: "clamp(24px, 4vw, 32px)",
+                  fontSize: "clamp(22px, 3.5vw, 28px)",
                   margin: 0,
                   fontWeight: 800,
                   letterSpacing: "-0.03em",
@@ -502,7 +526,6 @@ export default function AdminPage() {
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            {/* Admin Session Badge */}
             <div
               style={{
                 display: "inline-flex",
@@ -512,7 +535,6 @@ export default function AdminPage() {
                 border: "1px solid rgba(34, 197, 94, 0.35)",
                 borderRadius: 999,
                 padding: "6px 14px",
-                backdropFilter: "blur(12px)",
                 fontSize: 12,
                 fontWeight: 600,
                 color: "#4ade80",
@@ -549,6 +571,7 @@ export default function AdminPage() {
             >
               📊 Spreadsheet
             </Link>
+
             <Link
               href="/"
               style={{
@@ -567,173 +590,48 @@ export default function AdminPage() {
               ← Home
             </Link>
           </div>
-        </div>
+        </header>
 
-        {/* TABS SELECTOR */}
-        <div
-          style={{
-            display: "flex",
-            gap: 10,
-            marginBottom: 28,
-            flexWrap: "wrap",
-            borderBottom: "1px solid rgba(255,255,255,0.08)",
-            paddingBottom: 14,
-          }}
-        >
+        {/* 1. SELETTORE NAVIGAZIONE SUPERIORE (TAB SWITCHER) */}
+        <div className="admin-tabs-bar" style={{ marginTop: 20 }}>
           <button
             type="button"
+            className={`admin-tab-btn ${tab === "catalog" ? "active" : ""}`}
             onClick={() => setTab("catalog")}
-            style={{
-              padding: "10px 22px",
-              borderRadius: 14,
-              background:
-                tab === "catalog"
-                  ? "linear-gradient(135deg, #8b5cf6, #6366f1)"
-                  : "rgba(255,255,255,0.05)",
-              border: `1px solid ${tab === "catalog" ? "rgba(139, 92, 246, 0.5)" : "rgba(255,255,255,0.1)"}`,
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 14,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              boxShadow: tab === "catalog" ? "0 8px 24px rgba(139, 92, 246, 0.3)" : "none",
-              transition: "all 0.2s",
-            }}
           >
-            <span>📦 Modifica Catalogo</span>
-            <span
-              style={{
-                fontSize: 11,
-                padding: "2px 8px",
-                borderRadius: 999,
-                background: tab === "catalog" ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.12)",
-                fontWeight: 700,
-              }}
-            >
-              {products.length}
-            </span>
+            <span>📦 Gestione Prodotti</span>
+            <span className="admin-tab-badge">{products.length}</span>
           </button>
 
           <button
             type="button"
-            onClick={() => setTab("single")}
-            style={{
-              padding: "10px 20px",
-              borderRadius: 14,
-              background:
-                tab === "single"
-                  ? "linear-gradient(90deg, #3b82f6, #1d4ed8)"
-                  : "rgba(255,255,255,0.05)",
-              border: `1px solid ${tab === "single" ? "rgba(59, 130, 246, 0.5)" : "rgba(255,255,255,0.1)"}`,
-              color: "#fff",
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              boxShadow: tab === "single" ? "0 8px 24px rgba(59, 130, 246, 0.3)" : "none",
-              transition: "all 0.2s",
-            }}
+            className={`admin-tab-btn ${tab === "insert" ? "active" : ""}`}
+            onClick={() => setTab("insert")}
           >
-            ➕ Inserimento Singolo
+            <span>➕ Inserimento Prodotto</span>
           </button>
         </div>
 
         {/* ---------------------------------------------------------------- */}
-        {/* TAB 1: CATALOG MANAGEMENT (GRID + MODIFICA + ELIMINA)           */}
+        {/* 2. VISTA "GESTIONE PRODOTTI": UI UNIFORMATA ALLA SPREADSHEET     */}
         {/* ---------------------------------------------------------------- */}
         {tab === "catalog" && (
           <div>
-            {/* SEARCH & FILTERS BAR */}
-            <div
-              style={{
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 20,
-                padding: "20px 22px",
-                marginBottom: 24,
-                backdropFilter: "blur(16px)",
-                display: "grid",
-                gap: 16,
-              }}
-            >
-              {/* Row 1: Search and Primary Actions */}
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                <div style={{ position: "relative", flex: "1 1 320px" }}>
-                  <input
-                    type="text"
-                    value={catalogSearch}
-                    onChange={(e) => {
-                      setCatalogSearch(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    placeholder="🔍 Cerca per titolo, brand, seller, categoria o ID..."
-                    style={{
-                      ...inputStyle,
-                      paddingLeft: 38,
-                      background: "rgba(0,0,0,0.6)",
-                      borderColor: catalogSearch ? "rgba(139, 92, 246, 0.5)" : "rgba(255,255,255,0.14)",
-                    }}
-                  />
-                  <span
-                    style={{
-                      position: "absolute",
-                      left: 14,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      opacity: 0.5,
-                      pointerEvents: "none",
-                      fontSize: 14,
-                    }}
-                  >
-                    🔍
-                  </span>
-                  {catalogSearch && (
-                    <button
-                      type="button"
-                      onClick={() => setCatalogSearch("")}
-                      style={{
-                        position: "absolute",
-                        right: 12,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "transparent",
-                        border: 0,
-                        color: "rgba(255,255,255,0.5)",
-                        cursor: "pointer",
-                        fontSize: 14,
-                      }}
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-
+            {/* BARRA DEI FILTRI E RICERCA (.sheet-bar) */}
+            <div className="sheet-bar">
+              <div className="sheet-row1">
                 <button
                   type="button"
+                  className="back"
                   onClick={loadProducts}
                   disabled={catalogLoading}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: 12,
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    color: "#fff",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: catalogLoading ? "wait" : "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
                   title="Ricarica prodotti dal database"
+                  style={{ cursor: "pointer" }}
                 >
                   <span
                     style={{
                       display: "inline-block",
+                      marginRight: 6,
                       animation: catalogLoading ? "spin 0.8s linear infinite" : "none",
                     }}
                   >
@@ -742,78 +640,47 @@ export default function AdminPage() {
                   Ricarica
                 </button>
 
+                <input
+                  className="search"
+                  placeholder="Cerca (brand, seller, categoria, titolo, ID)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+
                 <button
                   type="button"
-                  onClick={() => setTab("single")}
+                  className="back"
+                  onClick={() => setTab("insert")}
                   style={{
-                    padding: "10px 18px",
-                    borderRadius: 12,
                     background: "linear-gradient(135deg, #b982ff, #8cffd2)",
-                    border: 0,
                     color: "#0a0a0c",
-                    fontSize: 13,
-                    fontWeight: 800,
+                    fontWeight: 700,
+                    border: 0,
                     cursor: "pointer",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    boxShadow: "0 6px 20px rgba(185, 130, 255, 0.25)",
                   }}
+                  title="Aggiungi un nuovo prodotto"
                 >
-                  ➕ Nuovo Prodotto
+                  ➕ Nuovo
                 </button>
               </div>
 
-              {/* Row 2: Select Filters */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                  borderTop: "1px solid rgba(255,255,255,0.06)",
-                  paddingTop: 14,
-                }}
-              >
+              {/* DROPDOWN FILTRI (.filters) */}
+              <div className="filters">
                 <select
-                  value={filterCategory}
-                  onChange={(e) => {
-                    setFilterCategory(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  style={{ ...filterSelectStyle, minWidth: 140 }}
+                  className="sel"
+                  value={filterOrder}
+                  onChange={(e) => setFilterOrder(e.target.value)}
                 >
-                  <option value="">Categoria: Tutte</option>
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
+                  <option value="">Ordina</option>
+                  <option value="asc">Prezzo ↑</option>
+                  <option value="desc">Prezzo ↓</option>
+                  <option value="title">Titolo A-Z</option>
                 </select>
 
                 <select
-                  value={filterBrand}
-                  onChange={(e) => {
-                    setFilterBrand(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  style={{ ...filterSelectStyle, minWidth: 130 }}
-                >
-                  <option value="">Brand: Tutti</option>
-                  {uniqueBrands.map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-                </select>
-
-                <select
+                  className="sel"
                   value={filterSeller}
-                  onChange={(e) => {
-                    setFilterSeller(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  style={{ ...filterSelectStyle, minWidth: 130 }}
+                  onChange={(e) => setFilterSeller(e.target.value)}
                 >
                   <option value="">Seller: Tutti</option>
                   {uniqueSellers.map((s) => (
@@ -824,504 +691,162 @@ export default function AdminPage() {
                 </select>
 
                 <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  style={{ ...filterSelectStyle, minWidth: 150 }}
+                  className="sel"
+                  value={filterBrand}
+                  onChange={(e) => setFilterBrand(e.target.value)}
                 >
-                  <option value="newest">Ordina: Più recenti</option>
-                  <option value="price-asc">Prezzo: Crescente ↑</option>
-                  <option value="price-desc">Prezzo: Decrescente ↓</option>
-                  <option value="title">Titolo: Alfabetico (A-Z)</option>
+                  <option value="">Brand: Tutti</option>
+                  {uniqueBrands.map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
                 </select>
 
-                {(catalogSearch || filterCategory || filterBrand || filterSeller || sortBy !== "newest") && (
-                  <button
-                    type="button"
-                    onClick={resetFilters}
-                    style={{
-                      padding: "8px 14px",
-                      borderRadius: 999,
-                      background: "rgba(255,255,255,0.06)",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      color: "rgba(255,255,255,0.6)",
-                      fontSize: 12,
-                      cursor: "pointer",
+                <select
+                  className="sel"
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                >
+                  <option value="">Categoria: Tutte</option>
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+
+                <button type="button" className="reset" onClick={resetFilters}>
+                  Reset
+                </button>
+              </div>
+
+              {/* BARRA STATISTICHE (.sheet-sub) */}
+              <div className="sheet-sub">
+                <span className="stat">
+                  Totale: <b>{filteredProducts.length}</b>
+                </span>
+                <span className="stat">
+                  Pagina <b>{curPage}</b>/{totalPages}
+                </span>
+                <span className="sp" />
+                <label className="perpage">
+                  <span>Per pagina</span>
+                  <select
+                    className="sel sel-sm"
+                    value={perPage}
+                    onChange={(e) => {
+                      setPerPage(Number(e.target.value));
+                      setPage(1);
                     }}
                   >
-                    Reset Filtri ✕
-                  </button>
-                )}
-
-                <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
-                  <span style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-                    Mostrati <strong style={{ color: "#fff" }}>{filteredProducts.length}</strong> su{" "}
-                    <strong>{products.length}</strong> prodotti
-                  </span>
-
-                  <label style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
-                    <span>Per pagina:</span>
-                    <select
-                      value={perPage}
-                      onChange={(e) => {
-                        setPerPage(Number(e.target.value));
-                        setCurrentPage(1);
-                      }}
-                      style={{
-                        padding: "4px 8px",
-                        borderRadius: 8,
-                        background: "rgba(0,0,0,0.6)",
-                        border: "1px solid rgba(255,255,255,0.14)",
-                        color: "#fff",
-                        fontSize: 12,
-                      }}
-                    >
-                      <option value={12}>12</option>
-                      <option value={24}>24</option>
-                      <option value={48}>48</option>
-                      <option value={96}>96</option>
-                    </select>
-                  </label>
-                </div>
+                    {PER_PAGE_OPTIONS.map((n) => (
+                      <option key={n} value={n}>
+                        {n.toLocaleString("it-IT")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
             </div>
 
-            {/* PRODUCTS GRID */}
-            {catalogLoading && products.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "80px 20px",
-                  background: "rgba(255,255,255,0.02)",
-                  borderRadius: 20,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <div style={{ fontSize: 32, marginBottom: 12 }}>🔄</div>
-                <div style={{ fontSize: 16, fontWeight: 600 }}>Caricamento catalogo in corso...</div>
-              </div>
-            ) : paginatedProducts.length === 0 ? (
-              <div
-                style={{
-                  textAlign: "center",
-                  padding: "80px 20px",
-                  background: "rgba(255,255,255,0.02)",
-                  borderRadius: 20,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <div style={{ fontSize: 36, marginBottom: 12 }}>🔍</div>
-                <h3 style={{ margin: "0 0 8px", fontSize: 18 }}>Nessun prodotto trovato</h3>
-                <p style={{ margin: 0, fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
-                  Nessun elemento corrisponde ai filtri selezionati. Prova a resettare la ricerca.
-                </p>
-                <button
-                  type="button"
-                  onClick={resetFilters}
-                  style={{
-                    marginTop: 18,
-                    padding: "8px 18px",
-                    borderRadius: 999,
-                    background: "rgba(255,255,255,0.08)",
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    color: "#fff",
-                    fontSize: 13,
-                    cursor: "pointer",
-                  }}
-                >
-                  Resetta Filtri
-                </button>
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gap: 18,
-                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                  marginBottom: 32,
-                }}
-              >
-                {paginatedProducts.map((p) => {
-                  const catStyle = getCategoryColor(p.category);
-                  return (
-                    <div
-                      key={p.id}
-                      style={{
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        borderRadius: 22,
-                        overflow: "hidden",
-                        display: "flex",
-                        flexDirection: "column",
-                        transition: "all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)",
-                        boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
-                        position: "relative",
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.25)";
-                        e.currentTarget.style.transform = "translateY(-3px)";
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                        e.currentTarget.style.transform = "translateY(0)";
-                      }}
-                    >
-                      {/* CARD MEDIA */}
-                      <div
-                        style={{
-                          position: "relative",
-                          width: "100%",
-                          aspectRatio: "4 / 3",
-                          background: "rgba(0,0,0,0.5)",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <img
-                          src={p.image}
-                          alt={p.title}
-                          loading="lazy"
-                          onError={(e) => {
-                            (e.currentTarget as HTMLImageElement).src =
-                              "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='12'%3EImmagine non disp.%3C/text%3E%3C/svg%3E";
-                          }}
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                        />
-
-                        {/* Price badge */}
-                        <div
-                          style={{
-                            position: "absolute",
-                            left: 12,
-                            top: 12,
-                            padding: "4px 10px",
-                            borderRadius: 999,
-                            fontSize: 12,
-                            fontWeight: 700,
-                            background: "rgba(0,0,0,0.65)",
-                            border: "1px solid rgba(255,255,255,0.2)",
-                            backdropFilter: "blur(8px)",
-                            color: "#4ade80",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 5,
-                          }}
-                        >
-                          <span>{eur(p.price)}</span>
-                          <span style={{ fontSize: 10, color: "#86efac", opacity: 0.85, fontWeight: 500 }}>
-                            ¥ {p.priceRmb ?? Math.round(p.price * RMB_TO_EUR)}
-                          </span>
-                        </div>
-
-                        {/* Category badge */}
-                        <div
-                          style={{
-                            position: "absolute",
-                            right: 12,
-                            top: 12,
-                            padding: "3px 9px",
-                            borderRadius: 999,
-                            fontSize: 10,
-                            fontWeight: 700,
-                            letterSpacing: "0.06em",
-                            background: catStyle.bg,
-                            border: `1px solid ${catStyle.border}`,
-                            color: catStyle.color,
-                            backdropFilter: "blur(8px)",
-                          }}
-                        >
-                          {p.category}
-                        </div>
-
-                        {/* Quick View Link */}
-                        <Link
-                          href={`/item/${p.id}`}
-                          target="_blank"
-                          title="Apri scheda prodotto"
-                          style={{
-                            position: "absolute",
-                            right: 12,
-                            bottom: 12,
-                            width: 32,
-                            height: 32,
-                            borderRadius: "50%",
-                            background: "rgba(0,0,0,0.7)",
-                            border: "1px solid rgba(255,255,255,0.2)",
-                            display: "grid",
-                            placeItems: "center",
-                            fontSize: 13,
-                            color: "#fff",
-                            backdropFilter: "blur(6px)",
-                            transition: "transform 0.2s",
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
-                          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-                        >
-                          ↗
-                        </Link>
-                      </div>
-
-                      {/* CARD BODY */}
-                      <div style={{ padding: "16px", display: "flex", flexDirection: "column", flex: 1 }}>
-                        <h3
-                          style={{
-                            margin: "0 0 8px",
-                            fontSize: 14,
-                            fontWeight: 600,
-                            lineHeight: 1.35,
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                            minHeight: 38,
-                          }}
-                          title={p.title}
-                        >
-                          {p.title}
-                        </h3>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            fontSize: 11.5,
-                            color: "rgba(255,255,255,0.55)",
-                            marginBottom: 12,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <span>🏷️ {p.brand || "—"}</span>
-                          <span>•</span>
-                          <span>👤 {p.seller || "—"}</span>
-                        </div>
-
-                        {/* Affiliation Status Badges (Clickable) */}
-                        <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-                          {p.cssbuyUrl ? (
-                            <a
-                              href={p.cssbuyUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="Apri link affiliato CSSBuy in nuova scheda"
-                              style={{
-                                fontSize: 10.5,
-                                padding: "2px 8px",
-                                borderRadius: 999,
-                                background: "rgba(34, 197, 94, 0.14)",
-                                border: "1px solid rgba(34, 197, 94, 0.35)",
-                                color: "#4ade80",
-                                fontWeight: 700,
-                                textDecoration: "none",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 4,
-                                transition: "all 0.2s",
-                              }}
-                            >
-                              <span>🛒 CSSBuy</span>
-                              <span style={{ fontSize: 9 }}>↗</span>
-                            </a>
-                          ) : (
-                            <span
-                              style={{
-                                fontSize: 10.5,
-                                padding: "2px 8px",
-                                borderRadius: 999,
-                                background: "rgba(255,255,255,0.05)",
-                                border: "1px solid rgba(255,255,255,0.1)",
-                                color: "rgba(255,255,255,0.35)",
-                                fontWeight: 600,
-                              }}
-                            >
-                              🛒 CSSBuy —
-                            </span>
-                          )}
-
-                          {p.doppelfitUrl ? (
-                            <a
-                              href={p.doppelfitUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title="Apri link Doppelfit in nuova scheda"
-                              style={{
-                                fontSize: 10.5,
-                                padding: "2px 8px",
-                                borderRadius: 999,
-                                background: "rgba(99, 102, 241, 0.14)",
-                                border: "1px solid rgba(99, 102, 241, 0.35)",
-                                color: "#a5b4fc",
-                                fontWeight: 700,
-                                textDecoration: "none",
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 4,
-                                transition: "all 0.2s",
-                              }}
-                            >
-                              <span>🔍 Doppelfit</span>
-                              <span style={{ fontSize: 9 }}>↗</span>
-                            </a>
-                          ) : (
-                            <span
-                              style={{
-                                fontSize: 10.5,
-                                padding: "2px 8px",
-                                borderRadius: 999,
-                                background: "rgba(255,255,255,0.05)",
-                                border: "1px solid rgba(255,255,255,0.1)",
-                                color: "rgba(255,255,255,0.35)",
-                                fontWeight: 600,
-                              }}
-                            >
-                              🔍 Doppelfit —
-                            </span>
-                          )}
-                        </div>
-
-                        {/* ACTIONS FOOTER */}
-                        <div
-                          style={{
-                            marginTop: "auto",
-                            display: "grid",
-                            gridTemplateColumns: "1fr 1fr",
-                            gap: 8,
-                            paddingTop: 12,
-                            borderTop: "1px solid rgba(255,255,255,0.08)",
-                          }}
-                        >
-                          <button
-                            type="button"
-                            onClick={() => openEditModal(p)}
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: 10,
-                              background: "rgba(59, 130, 246, 0.15)",
-                              border: "1px solid rgba(59, 130, 246, 0.35)",
-                              color: "#60a5fa",
-                              fontSize: 12.5,
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: 6,
-                              transition: "all 0.2s",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = "rgba(59, 130, 246, 0.25)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = "rgba(59, 130, 246, 0.15)";
-                            }}
-                          >
-                            ✏️ Modifica
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => setDeletingProduct(p)}
-                            style={{
-                              padding: "8px 12px",
-                              borderRadius: 10,
-                              background: "rgba(239, 68, 68, 0.12)",
-                              border: "1px solid rgba(239, 68, 68, 0.3)",
-                              color: "#f87171",
-                              fontSize: 12.5,
-                              fontWeight: 600,
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: 6,
-                              transition: "all 0.2s",
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.background = "rgba(239, 68, 68, 0.22)";
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)";
-                            }}
-                          >
-                            🗑️ Elimina
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* PAGINATION CONTROLS */}
-            {totalPages > 1 && (
-              <nav
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 12,
-                  marginTop: 28,
-                  padding: "16px 0",
-                }}
-              >
-                <button
-                  type="button"
-                  disabled={activePage <= 1}
-                  onClick={() => {
-                    setCurrentPage((p) => Math.max(1, p - 1));
-                    window.scrollTo({ top: 120, behavior: "smooth" });
-                  }}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: 999,
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    color: "#fff",
-                    fontSize: 13,
-                    cursor: activePage <= 1 ? "not-allowed" : "pointer",
-                    opacity: activePage <= 1 ? 0.35 : 1,
-                  }}
-                >
-                  ← Precedente
-                </button>
-
+            {/* GRIGLIA PRODOTTI (.grid e .card) */}
+            <div className="grid">
+              {visibleProducts.map((p, i) => (
                 <div
-                  style={{
-                    padding: "6px 16px",
-                    borderRadius: 999,
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    fontSize: 12.5,
-                    color: "rgba(255,255,255,0.8)",
-                  }}
+                  key={p.id}
+                  className="card"
+                  style={{ animationDelay: `${(i % 24) * 30}ms` }}
                 >
-                  Pagina <strong style={{ color: "#fff" }}>{activePage}</strong> di {totalPages}
-                </div>
+                  <div className="card-media">
+                    <img
+                      src={p.image}
+                      alt={p.title}
+                      loading="lazy"
+                      draggable={false}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src =
+                          "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='370' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='14'%3EImmagine non disp.%3C/text%3E%3C/svg%3E";
+                      }}
+                    />
+                    <div className="price">
+                      <span>{eur(p.price)}</span>
+                      <span className="price-rmb" title="Prezzo originale in Yuan (¥)">
+                        {rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}
+                      </span>
+                    </div>
 
+                    <Link
+                      href={`/item/${encodeURIComponent(p.id)}`}
+                      target="_blank"
+                      className="admin-card-view"
+                      title="Visualizza scheda prodotto in nuova scheda"
+                    >
+                      ↗
+                    </Link>
+                  </div>
+
+                  <div className="card-body">
+                    <div className="card-title" title={p.title}>
+                      {p.title}
+                    </div>
+                    <div className="card-meta">
+                      {p.seller && p.seller !== "—" && p.seller !== "-" ? `${p.seller} • ` : ""}
+                      {p.category}
+                      {p.brand && p.brand !== "—" ? ` • ${p.brand}` : ""}
+                    </div>
+
+                    {/* AZIONI AMMINISTRATIVE INTEGRATE SU OGNI CARD */}
+                    <div className="admin-actions">
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn-edit"
+                        onClick={() => openEditModal(p)}
+                        title="Modifica dati del prodotto"
+                      >
+                        ✏️ Modifica
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-btn admin-btn-del"
+                        onClick={() => setDeletingProduct(p)}
+                        title="Elimina questo prodotto"
+                      >
+                        🗑️ Elimina
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {!filteredProducts.length && !catalogLoading && (
+                <div className="empty">Nessun prodotto trovato per i criteri selezionati.</div>
+              )}
+            </div>
+
+            {/* PAGINAZIONE (.pager) */}
+            {totalPages > 1 && (
+              <nav className="pager" aria-label="Paginazione">
                 <button
                   type="button"
-                  disabled={activePage >= totalPages}
-                  onClick={() => {
-                    setCurrentPage((p) => Math.min(totalPages, p + 1));
-                    window.scrollTo({ top: 120, behavior: "smooth" });
-                  }}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: 999,
-                    background: "rgba(255,255,255,0.06)",
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    color: "#fff",
-                    fontSize: 13,
-                    cursor: activePage >= totalPages ? "not-allowed" : "pointer",
-                    opacity: activePage >= totalPages ? 0.35 : 1,
-                  }}
+                  className="pager-btn"
+                  disabled={curPage <= 1}
+                  onClick={() => goPage(curPage - 1)}
+                  aria-label="Pagina precedente"
                 >
-                  Successiva →
+                  ←
+                </button>
+                <span className="pager-info">
+                  Pagina {curPage}/{totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="pager-btn"
+                  disabled={curPage >= totalPages}
+                  onClick={() => goPage(curPage + 1)}
+                  aria-label="Pagina successiva"
+                >
+                  →
                 </button>
               </nav>
             )}
@@ -1329,34 +854,34 @@ export default function AdminPage() {
         )}
 
         {/* ---------------------------------------------------------------- */}
-        {/* TAB 2: SINGLE PRODUCT INSERTION                                 */}
+        {/* 3. VISTA "INSERIMENTO PRODOTTO": FORM PULITO E DEDICATO          */}
         {/* ---------------------------------------------------------------- */}
-        {tab === "single" && (
-          <div style={{ maxWidth: 840, margin: "0 auto" }}>
+        {tab === "insert" && (
+          <div style={{ maxWidth: 860, margin: "0 auto", padding: "20px 20px 80px" }}>
+            {/* BOX AUTOCONVERSIONE LINK */}
             <section
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.1)",
                 borderRadius: 24,
                 padding: 26,
-                marginBottom: 28,
+                marginBottom: 24,
                 backdropFilter: "blur(14px)",
               }}
             >
-              <h2 style={{ fontSize: 19, marginTop: 0, marginBottom: 10, fontWeight: 700 }}>
-                1. Incolla il link del prodotto da convertire
+              <h2 style={{ fontSize: 18, marginTop: 0, marginBottom: 8, fontWeight: 700 }}>
+                🔗 1. Autoconversione Link (Opzionale)
               </h2>
               <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginTop: 0, marginBottom: 18 }}>
-                Supporta link <strong>Weidian</strong>, <strong>Taobao</strong>, <strong>1688</strong> o link
-                <strong> CSSBuy</strong> (anche i link brevi <code>cssb.uy/...</code>). Il tuo promotion code
-                affiliato viene applicato in automatico.
+                Incolla un link da <strong>Taobao</strong>, <strong>Weidian</strong>, <strong>1688</strong>,{" "}
+                <strong>CSSBuy</strong> (anche <code>cssb.uy/...</code>) o <strong>Doppelfit</strong>. Verranno estratti titolo, immagine, prezzi e generati in automatico i link affiliati.
               </p>
 
               <form onSubmit={handleConvert} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <input
                   type="text"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
+                  value={convertUrl}
+                  onChange={(e) => setConvertUrl(e.target.value)}
                   placeholder="https://weidian.com/item.html?itemID=... oppure https://cssb.uy/..."
                   style={{
                     flex: "1 1 320px",
@@ -1371,7 +896,7 @@ export default function AdminPage() {
                 />
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={convertLoading}
                   style={{
                     padding: "12px 24px",
                     borderRadius: 12,
@@ -1379,261 +904,273 @@ export default function AdminPage() {
                     border: 0,
                     color: "#fff",
                     fontWeight: 600,
-                    cursor: loading ? "wait" : "pointer",
-                    opacity: loading ? 0.7 : 1,
+                    cursor: convertLoading ? "wait" : "pointer",
+                    opacity: convertLoading ? 0.7 : 1,
                   }}
                 >
-                  {loading ? "Conversione..." : "Converti Link"}
+                  {convertLoading ? "Conversione..." : "Converti Link"}
                 </button>
               </form>
             </section>
 
-            {ready && (
-              <form
-                onSubmit={handleSaveSingle}
-                style={{
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 24,
-                  padding: 26,
-                  display: "grid",
-                  gap: 20,
-                  backdropFilter: "blur(14px)",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <h2 style={{ fontSize: 19, margin: 0, fontWeight: 700 }}>2. Dettagli e Link Affiliati</h2>
-                  <span style={{ fontSize: 12, color: "#34d399", fontWeight: 600 }}>Link convertito con successo ✓</span>
+            {/* FORM COMPLETO CAMPI PRODOTTO */}
+            <form
+              onSubmit={handleSaveInsert}
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 24,
+                padding: 26,
+                display: "grid",
+                gap: 20,
+                backdropFilter: "blur(14px)",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h2 style={{ fontSize: 18, margin: 0, fontWeight: 700 }}>📦 2. Dettagli del Prodotto</h2>
+                <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>* Campi obbligatori</span>
+              </div>
+
+              {/* Titolo */}
+              <div>
+                <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
+                  Titolo Prodotto *
+                </label>
+                <input
+                  required
+                  type="text"
+                  value={insertForm.title}
+                  onChange={setInsertField("title")}
+                  placeholder="es. Nike Air Force 1 Low '07 Triple White"
+                  style={inputStyle}
+                />
+              </div>
+
+              {/* Immagine con anteprima e upload da PC */}
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
+                  <label style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
+                    URL Immagine / Foto *
+                  </label>
+                  <label
+                    style={{
+                      fontSize: 12,
+                      color: "#38bdf8",
+                      cursor: uploadingImg ? "wait" : "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      padding: "4px 10px",
+                      borderRadius: 8,
+                      background: "rgba(56, 189, 248, 0.12)",
+                      border: "1px solid rgba(56, 189, 248, 0.3)",
+                      fontWeight: 600,
+                    }}
+                    title="Scegli una foto dal computer da caricare su /api/upload"
+                  >
+                    {uploadingImg ? (
+                      <>
+                        <span style={{ display: "inline-block", animation: "spin 0.8s linear infinite" }}>🔄</span>
+                        <span>Caricamento in corso...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>📁</span>
+                        <span>Carica foto dal PC</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingImg}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadImage(file, "insert");
+                      }}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                </div>
+                <input
+                  required
+                  type="text"
+                  value={insertForm.image}
+                  onChange={setInsertField("image")}
+                  placeholder="https://... oppure /uploads/... oppure /products/p1.jpg"
+                  style={inputStyle}
+                />
+
+                {insertForm.image && (
+                  <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 14 }}>
+                    <img
+                      src={insertForm.image}
+                      alt="Anteprima foto"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src =
+                          "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23222'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23777' font-size='10'%3EAnteprima%3C/text%3E%3C/svg%3E";
+                      }}
+                      style={{
+                        width: 80,
+                        height: 80,
+                        objectFit: "cover",
+                        borderRadius: 12,
+                        border: "1px solid rgba(255,255,255,0.2)",
+                      }}
+                    />
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>
+                      Anteprima immagine caricata
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Prezzi (EUR & RMB) calcolati automaticamente */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
+                    Prezzo in € (EUR) *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={insertForm.price}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const num = parseFloat(val.replace(",", "."));
+                      setInsertForm((prev) => ({
+                        ...prev,
+                        price: val,
+                        priceRmb: !isNaN(num) && num > 0 ? String(Math.round(num * RMB_TO_EUR)) : prev.priceRmb,
+                      }));
+                    }}
+                    placeholder="es. 29.90"
+                    style={inputStyle}
+                  />
                 </div>
 
                 <div>
                   <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                    Titolo Prodotto *
+                    Prezzo originale in ¥ (CNY / RMB)
                   </label>
                   <input
-                    required
                     type="text"
-                    value={f.title}
-                    onChange={setField("title")}
-                    placeholder="es. Nike Dunk Low Retro Black White"
+                    value={insertForm.priceRmb}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const num = parseFloat(val.replace(",", "."));
+                      setInsertForm((prev) => ({
+                        ...prev,
+                        priceRmb: val,
+                        price: !isNaN(num) && num > 0 ? (num / RMB_TO_EUR).toFixed(2) : prev.price,
+                      }));
+                    }}
+                    placeholder="es. 223"
                     style={inputStyle}
                   />
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
-                  <div>
-                    <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                      Prezzo in € (EUR) *
-                    </label>
-                    <input
-                      required
-                      type="text"
-                      value={f.price}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const num = parseFloat(val.replace(",", "."));
-                        setF((prev) => ({
-                          ...prev,
-                          price: val,
-                          priceRmb: !isNaN(num) && num > 0 ? String(Math.round(num * RMB_TO_EUR)) : prev.priceRmb,
-                        }));
-                      }}
-                      placeholder="es. 29.90"
-                      style={inputStyle}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                      Prezzo originale in ¥ (CNY / RMB)
-                    </label>
-                    <input
-                      type="text"
-                      value={f.priceRmb}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const num = parseFloat(val.replace(",", "."));
-                        setF((prev) => ({
-                          ...prev,
-                          priceRmb: val,
-                          price: !isNaN(num) && num > 0 ? (num / RMB_TO_EUR).toFixed(2) : prev.price,
-                        }));
-                      }}
-                      placeholder="es. 233"
-                      style={inputStyle}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                      Categoria
-                    </label>
-                    <select
-                      value={f.category}
-                      onChange={setField("category")}
-                      style={{ ...inputStyle, cursor: "pointer" }}
-                    >
-                      {CATEGORIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                      Brand
-                    </label>
-                    <input
-                      type="text"
-                      value={f.brand}
-                      onChange={setField("brand")}
-                      placeholder="es. Nike, Supreme, Trapstar..."
-                      style={inputStyle}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                      Seller <span style={{ opacity: 0.6, fontWeight: 400 }}>(opzionale)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={f.seller}
-                      onChange={setField("seller")}
-                      placeholder="es. Mook, Chaosmade, Yolo66... (oppure lascia vuoto)"
-                      style={inputStyle}
-                    />
-                  </div>
-                </div>
-
                 <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
-                    <label style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
-                      URL Immagine * (URL web o percorso es. /products/p1.jpg)
-                    </label>
-                    <label
-                      style={{
-                        fontSize: 12,
-                        color: "#38bdf8",
-                        cursor: uploadingImg ? "wait" : "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 6,
-                        padding: "4px 10px",
-                        borderRadius: 8,
-                        background: "rgba(56, 189, 248, 0.12)",
-                        border: "1px solid rgba(56, 189, 248, 0.3)",
-                        fontWeight: 600,
-                      }}
-                      title="Scegli una foto dal tuo computer da caricare"
-                    >
-                      {uploadingImg ? (
-                        <>
-                          <span style={{ display: "inline-block", animation: "spin 0.8s linear infinite" }}>🔄</span>
-                          <span>Caricamento in corso...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>📁</span>
-                          <span>Carica foto dal PC</span>
-                        </>
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        disabled={uploadingImg}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleUploadImage(file, "single");
-                        }}
-                        style={{ display: "none" }}
-                      />
-                    </label>
-                  </div>
+                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
+                    Categoria
+                  </label>
+                  <select
+                    value={insertForm.category}
+                    onChange={setInsertField("category")}
+                    style={{ ...inputStyle, cursor: "pointer" }}
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Brand & Seller */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+                <div>
+                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
+                    Brand
+                  </label>
                   <input
-                    required
                     type="text"
-                    value={f.image}
-                    onChange={setField("image")}
-                    placeholder="https://... oppure /uploads/..."
+                    value={insertForm.brand}
+                    onChange={setInsertField("brand")}
+                    placeholder="es. Nike, Supreme, Hellstar..."
                     style={inputStyle}
                   />
-                  {f.image && (
-                    <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 14 }}>
-                      <img
-                        src={f.image}
-                        alt="Anteprima"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src =
-                            "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23222'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23777' font-size='10'%3EAnteprima%3C/text%3E%3C/svg%3E";
-                        }}
-                        style={{
-                          width: 80,
-                          height: 80,
-                          objectFit: "cover",
-                          borderRadius: 14,
-                          border: "1px solid rgba(255,255,255,0.2)",
-                        }}
-                      />
-                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>Anteprima immagine</span>
-                    </div>
-                  )}
                 </div>
 
                 <div>
-                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "#4ade80", fontWeight: 600 }}>
-                    🛒 Link Affiliato CSSBuy (generato in automatico)
+                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
+                    Seller <span style={{ opacity: 0.6 }}>(opzionale)</span>
                   </label>
                   <input
                     type="text"
-                    value={f.cssbuyUrl}
-                    onChange={setField("cssbuyUrl")}
-                    style={{ ...inputStyle, borderColor: "rgba(34, 197, 94, 0.4)" }}
+                    value={insertForm.seller}
+                    onChange={setInsertField("seller")}
+                    placeholder="es. YOLO66, Chaosmade, Mook..."
+                    style={inputStyle}
                   />
                 </div>
+              </div>
 
-                <div>
-                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "#818cf8", fontWeight: 600 }}>
-                    🔍 Link o ID Doppelfit (referral ?ref=PPnCbrec garantito)
-                  </label>
-                  <input
-                    type="text"
-                    value={f.doppelfitUrl}
-                    onChange={setField("doppelfitUrl")}
-                    placeholder="es. https://doppel.fit/x5sUY8JQ oppure lascia vuoto"
-                    style={{ ...inputStyle, borderColor: "rgba(99, 102, 241, 0.4)" }}
-                  />
-                </div>
+              {/* Link CSSBuy & Doppelfit */}
+              <div>
+                <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "#4ade80", fontWeight: 600 }}>
+                  🛒 Link Affiliato CSSBuy
+                </label>
+                <input
+                  type="text"
+                  value={insertForm.cssbuyUrl}
+                  onChange={setInsertField("cssbuyUrl")}
+                  placeholder="https://www.cssbuy.com/shop/goodsDetail?promotionCode=..."
+                  style={{ ...inputStyle, borderColor: "rgba(34, 197, 94, 0.4)" }}
+                />
+              </div>
 
-                <button
-                  type="submit"
-                  disabled={saving}
-                  style={{
-                    marginTop: 8,
-                    padding: "14px 28px",
-                    borderRadius: 14,
-                    background: "linear-gradient(90deg, #16a34a, #15803d)",
-                    border: 0,
-                    color: "#fff",
-                    fontWeight: 700,
-                    fontSize: 15,
-                    cursor: saving ? "wait" : "pointer",
-                    boxShadow: "0 10px 30px rgba(22, 163, 74, 0.35)",
-                  }}
-                >
-                  {saving ? "Salvataggio in corso..." : "Salva Prodotto nel Database"}
-                </button>
-              </form>
-            )}
+              <div>
+                <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "#818cf8", fontWeight: 600 }}>
+                  🔍 Link o ID Doppelfit (referral ?ref=PPnCbrec garantito)
+                </label>
+                <input
+                  type="text"
+                  value={insertForm.doppelfitUrl}
+                  onChange={setInsertField("doppelfitUrl")}
+                  placeholder="https://doppel.fit/x5sUY8JQ oppure lascia vuoto"
+                  style={{ ...inputStyle, borderColor: "rgba(99, 102, 241, 0.4)" }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={insertSaving}
+                style={{
+                  marginTop: 8,
+                  padding: "14px 28px",
+                  borderRadius: 14,
+                  background: "linear-gradient(90deg, #16a34a, #15803d)",
+                  border: 0,
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  cursor: insertSaving ? "wait" : "pointer",
+                  boxShadow: "0 10px 30px rgba(22, 163, 74, 0.35)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
+              >
+                {insertSaving ? "Salvataggio nel catalogo..." : "💾 Salva Prodotto nel Catalogo"}
+              </button>
+            </form>
           </div>
         )}
 
-
-
         {/* ---------------------------------------------------------------- */}
-        {/* EDIT PRODUCT MODAL                                               */}
+        {/* MODAL MODIFICA PRODOTTO                                          */}
         {/* ---------------------------------------------------------------- */}
         {editingProduct && (
           <div
@@ -1715,11 +1252,11 @@ export default function AdminPage() {
               </div>
 
               <form onSubmit={handleSaveEdit} style={{ display: "grid", gap: 18 }}>
-                {/* Image Section with Live Preview + Direct PC Upload */}
+                {/* Immagine con anteprima e upload PC */}
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, flexWrap: "wrap", gap: 8 }}>
                     <label style={{ fontSize: 13, color: "rgba(255,255,255,0.7)" }}>
-                      URL Immagine / Foto Prodotto *
+                      URL Immagine / Foto *
                     </label>
                     <label
                       style={{
@@ -1735,7 +1272,7 @@ export default function AdminPage() {
                         border: "1px solid rgba(56, 189, 248, 0.3)",
                         fontWeight: 600,
                       }}
-                      title="Scegli una foto dal tuo computer da caricare"
+                      title="Scegli una foto dal computer da caricare"
                     >
                       {uploadingImg ? (
                         <>
@@ -1763,8 +1300,8 @@ export default function AdminPage() {
                   <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                     <div
                       style={{
-                        width: 90,
-                        height: 90,
+                        width: 80,
+                        height: 80,
                         borderRadius: 14,
                         overflow: "hidden",
                         background: "rgba(0,0,0,0.5)",
@@ -1778,23 +1315,10 @@ export default function AdminPage() {
                         alt="Anteprima foto"
                         onError={(e) => {
                           (e.currentTarget as HTMLImageElement).src =
-                            "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23222'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23777' font-size='10'%3EAnteprima%3C/text%3E%3C/svg%3E";
+                            "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23222'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23777' font-size='10'%3EAnteprima%3C/text%3E%3C/svg%3E";
                         }}
                         style={{ width: "100%", height: "100%", objectFit: "cover" }}
                       />
-                      {uploadingImg && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            inset: 0,
-                            background: "rgba(0,0,0,0.65)",
-                            display: "grid",
-                            placeItems: "center",
-                          }}
-                        >
-                          <span style={{ fontSize: 22, display: "inline-block", animation: "spin 0.8s linear infinite" }}>🔄</span>
-                        </div>
-                      )}
                     </div>
                     <div style={{ flex: 1 }}>
                       <input
@@ -1805,14 +1329,11 @@ export default function AdminPage() {
                         placeholder="https://... oppure /uploads/..."
                         style={inputStyle}
                       />
-                      <span style={{ fontSize: 11.5, color: "rgba(255,255,255,0.45)", marginTop: 6, display: "block" }}>
-                        Incolla un URL web diretto oppure clicca &quot;📁 Carica foto dal PC&quot; per salvare una foto dal computer.
-                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* Title */}
+                {/* Titolo */}
                 <div>
                   <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
                     Titolo Prodotto *
@@ -1827,7 +1348,7 @@ export default function AdminPage() {
                   />
                 </div>
 
-                {/* Price, Original Price & Category */}
+                {/* Prezzi & Categoria */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
@@ -1907,13 +1428,13 @@ export default function AdminPage() {
 
                   <div>
                     <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "rgba(255,255,255,0.7)" }}>
-                      Seller / Negozio <span style={{ opacity: 0.6, fontWeight: 400 }}>(opzionale)</span>
+                      Seller <span style={{ opacity: 0.6 }}>(opzionale)</span>
                     </label>
                     <input
                       type="text"
                       value={editForm.seller}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, seller: e.target.value }))}
-                      placeholder="es. YOLO66, JMDY, Mook... (oppure lascia vuoto)"
+                      placeholder="es. YOLO66, JMDY, Mook..."
                       style={inputStyle}
                     />
                   </div>
@@ -1931,9 +1452,6 @@ export default function AdminPage() {
                     placeholder="https://www.cssbuy.com/shop/goodsDetail?promotionCode=..."
                     style={{ ...inputStyle, borderColor: "rgba(34, 197, 94, 0.4)" }}
                   />
-                  <span style={{ fontSize: 11.5, color: "rgba(255,255,255,0.45)", marginTop: 4, display: "block" }}>
-                    Link con codice promozionale che porta all&apos;acquisto tramite CSSBuy.
-                  </span>
                 </div>
 
                 {/* Doppelfit URL */}
@@ -1948,13 +1466,10 @@ export default function AdminPage() {
                     placeholder="https://doppel.fit/... oppure ID item"
                     style={{ ...inputStyle, borderColor: "rgba(99, 102, 241, 0.4)" }}
                   />
-                  <span style={{ fontSize: 11.5, color: "rgba(255,255,255,0.45)", marginTop: 4, display: "block" }}>
-                    Il parametro referral <code>?ref=PPnCbrec</code> viene formattato automaticamente al salvataggio.
-                  </span>
                 </div>
 
-                {/* Actions */}
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 16 }}>
+                {/* Modal Buttons */}
+                <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 14 }}>
                   <button
                     type="button"
                     onClick={closeEditModal}
@@ -1996,7 +1511,7 @@ export default function AdminPage() {
         )}
 
         {/* ---------------------------------------------------------------- */}
-        {/* DELETE CONFIRMATION MODAL                                        */}
+        {/* MODAL CONFERMA ELIMINAZIONE PRODOTTO                             */}
         {/* ---------------------------------------------------------------- */}
         {deletingProduct && (
           <div
@@ -2056,7 +1571,7 @@ export default function AdminPage() {
                     Conferma Eliminazione
                   </h3>
                   <p style={{ margin: "2px 0 0", fontSize: 12.5, color: "rgba(255,255,255,0.6)" }}>
-                    L&apos;operazione è irreversibile e rimuoverà il prodotto.
+                    L&apos;operazione è irreversibile e rimuoverà il prodotto dal catalogo.
                   </p>
                 </div>
               </div>
@@ -2219,16 +1734,4 @@ const inputStyle: React.CSSProperties = {
   fontSize: 13.5,
   outline: "none",
   boxSizing: "border-box",
-};
-
-const filterSelectStyle: React.CSSProperties = {
-  height: 38,
-  padding: "0 12px",
-  borderRadius: 999,
-  border: "1px solid rgba(255,255,255,0.14)",
-  background: "rgba(0,0,0,0.6)",
-  color: "#fff",
-  fontSize: 12.5,
-  outline: "none",
-  cursor: "pointer",
 };

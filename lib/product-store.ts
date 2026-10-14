@@ -24,18 +24,32 @@ export function sanitizeSeller(seller?: string): string {
   return s;
 }
 
+export function normalizeProductId(id: string): string {
+  if (!id) return "";
+  let s = String(id).trim();
+  try {
+    while (s.includes("%")) {
+      const decoded = decodeURIComponent(s).trim();
+      if (decoded === s) break;
+      s = decoded;
+    }
+  } catch {}
+  return s.toLowerCase().trim();
+}
+
 export async function readDeletedIds(): Promise<Set<string>> {
   try {
     const raw = await fs.readFile(DELETED_FILE, "utf8");
     const arr = JSON.parse(raw) as string[];
-    return new Set(Array.isArray(arr) ? arr : []);
+    return new Set(Array.isArray(arr) ? arr.map(normalizeProductId).filter(Boolean) : []);
   } catch {
     return new Set();
   }
 }
 
 export async function writeDeletedIds(ids: Set<string>): Promise<void> {
-  await fs.writeFile(DELETED_FILE, JSON.stringify([...ids], null, 2), "utf8");
+  const normList = [...new Set([...ids].map(normalizeProductId).filter(Boolean))].sort();
+  await fs.writeFile(DELETED_FILE, JSON.stringify(normList, null, 2), "utf8");
 }
 
 export async function readRawProducts(): Promise<Product[]> {
@@ -62,38 +76,37 @@ export async function getAllProducts(): Promise<Product[]> {
     readDeletedIds(),
   ]);
 
-  const deletedNormalized = new Set([...deletedIds].map((id) => String(id).trim().toLowerCase()));
-
-  const extraIds = new Set(extra.map((p) => String(p.id).trim().toLowerCase()));
-  const baseFiltered = BASE_PRODUCTS.filter((p) => !extraIds.has(String(p.id).trim().toLowerCase()));
+  const deletedNormalized = new Set([...deletedIds].map(normalizeProductId));
+  const extraIds = new Set(extra.map((p) => normalizeProductId(p.id)));
+  const baseFiltered = BASE_PRODUCTS.filter((p) => !extraIds.has(normalizeProductId(p.id)));
   const combined = [...extra, ...baseFiltered];
 
-  return combined.filter((p) => !deletedNormalized.has(String(p.id).trim().toLowerCase()));
+  return combined.filter((p) => !deletedNormalized.has(normalizeProductId(p.id)));
 }
 
 export async function getProductById(id: string): Promise<Product | undefined> {
-  const clean = decodeURIComponent(id).trim().toLowerCase();
+  const clean = normalizeProductId(id);
   const all = await getAllProducts();
-  return all.find((p) => String(p.id).trim().toLowerCase() === clean);
+  return all.find((p) => normalizeProductId(p.id) === clean);
 }
 
 export async function updateProduct(
   id: string,
   updates: Partial<Product>
 ): Promise<Product | null> {
-  const cleanId = decodeURIComponent(id).trim();
+  const normTarget = normalizeProductId(id);
+  if (!normTarget) return null;
+
   const extra = await readRawProducts();
   const deletedIds = await readDeletedIds();
 
   // If was previously deleted, un-delete it
-  if (deletedIds.has(cleanId) || deletedIds.has(id)) {
-    deletedIds.delete(cleanId);
-    deletedIds.delete(id);
+  if (deletedIds.has(normTarget)) {
+    deletedIds.delete(normTarget);
     await writeDeletedIds(deletedIds);
   }
 
-  const normTarget = cleanId.toLowerCase();
-  const existingIndex = extra.findIndex((p) => String(p.id).trim().toLowerCase() === normTarget);
+  const existingIndex = extra.findIndex((p) => normalizeProductId(p.id) === normTarget);
   let updatedProduct: Product;
 
   // Strict whitelisting of allowed Product fields — NEVER allow password or arbitrary fields
@@ -147,7 +160,7 @@ export async function updateProduct(
     extra[existingIndex] = updatedProduct;
   } else {
     // Check if it was in BASE_PRODUCTS
-    const baseP = BASE_PRODUCTS.find((p) => String(p.id).trim().toLowerCase() === normTarget);
+    const baseP = BASE_PRODUCTS.find((p) => normalizeProductId(p.id) === normTarget);
     if (!baseP) {
       return null;
     }
@@ -175,67 +188,38 @@ export async function updateProduct(
 
 export async function deleteProduct(id: string): Promise<boolean> {
   if (!id) return false;
-  const rawId = String(id).trim();
-  let cleanId = rawId;
-  try {
-    cleanId = decodeURIComponent(rawId).trim();
-  } catch {}
-
-  const targetIds = new Set<string>();
-  for (const item of [rawId, cleanId]) {
-    if (!item) continue;
-    targetIds.add(item);
-    targetIds.add(item.toLowerCase());
-    try {
-      const enc = encodeURIComponent(item);
-      targetIds.add(enc);
-      targetIds.add(enc.toLowerCase());
-    } catch {}
-  }
+  const normTarget = normalizeProductId(id);
+  if (!normTarget) return false;
 
   const [extra, deletedIds] = await Promise.all([
     readRawProducts(),
     readDeletedIds(),
   ]);
 
-  const matchFn = (p: Product) => {
-    const pid = String(p.id || "").trim();
-    let pidDecoded = pid;
-    try {
-      pidDecoded = decodeURIComponent(pid).trim();
-    } catch {}
-    return (
-      targetIds.has(pid) ||
-      targetIds.has(pid.toLowerCase()) ||
-      targetIds.has(pidDecoded) ||
-      targetIds.has(pidDecoded.toLowerCase())
-    );
+  const matchId = (target: string, candidate: string) => {
+    if (!target || !candidate) return false;
+    const t = String(target).trim().toLowerCase();
+    const c = String(candidate).trim().toLowerCase();
+    if (t === c) return true;
+    if (normalizeProductId(t) === normalizeProductId(c)) return true;
+    return false;
   };
 
-  const matchedIds: string[] = [];
-  for (const p of extra) {
-    if (matchFn(p)) {
-      matchedIds.push(String(p.id).trim());
-    }
-  }
-  for (const p of BASE_PRODUCTS) {
-    if (matchFn(p)) {
-      matchedIds.push(String(p.id).trim());
-    }
-  }
+  // Physically remove from extra (data/products.json)
+  const initialExtraCount = extra.length;
+  const newExtra = extra.filter((p) => !matchId(normTarget, p.id) && !matchId(id, p.id));
+  const removedFromExtra = newExtra.length < initialExtraCount;
+  const existsInBase = BASE_PRODUCTS.some((p) => matchId(normTarget, p.id) || matchId(id, p.id));
+  const alreadyDeleted = deletedIds.has(normTarget);
 
-  // Remove any matching items from extra
-  const newExtra = extra.filter((p) => !matchFn(p));
-
-  // Always register targetIds and any matchedIds in deletedIds
-  for (const tid of [...targetIds, ...matchedIds]) {
-    if (tid) {
-      deletedIds.add(tid);
-      deletedIds.add(tid.toLowerCase());
-    }
+  // If item wasn't in extra, wasn't in base, and already deleted, return true directly
+  // Ensure normalized ID is added to deletedIds
+  deletedIds.add(normTarget);
+  const rawClean = String(id).trim().toLowerCase();
+  if (rawClean) {
+    deletedIds.add(rawClean);
   }
 
-  // Write both files
   await Promise.all([
     writeDeletedIds(deletedIds),
     writeRawProducts(newExtra),
