@@ -8637,6 +8637,25 @@
       ]
     },
     {
+      "id": "wallet",
+      "name": "Wallet",
+      "cover": "https://i.pinimg.com/736x/45/fc/9a/45fc9a5f959dbd6b856d053e161a6f65.jpg",
+      "category": "Accessori & Borse",
+      "sellersCount": 2,
+      "sellers": [
+        {
+          "name": "SCARLETT",
+          "officialUrl": "https://weidian.com/?userid=1655376466&spider_token=6c34",
+          "spreadsheetQuery": "SCARLETT"
+        },
+        {
+          "name": "Poshreps",
+          "officialUrl": "https://poshrep.x.yupoo.com/albums/",
+          "spreadsheetQuery": "POSHREP"
+        }
+      ]
+    },
+    {
       "id": "yohji yamamoto",
       "name": "Yohji Yamamoto",
       "cover": "https://i.pinimg.com/1200x/60/b8/65/60b865d86870bd21909d1fc9248e0c79.jpg",
@@ -8808,14 +8827,6 @@
           "spreadsheetQuery": "CNmade"
         }
       ]
-    },
-    {
-      "id": "wallet",
-      "name": "Wallet",
-      "cover": "https://i.pinimg.com/736x/45/fc/9a/45fc9a5f959dbd6b856d053e161a6f65.jpg",
-      "category": "Accessori & Borse",
-      "sellersCount": 0,
-      "sellers": []
     }
   ],
   "sellers": [
@@ -10398,7 +10409,7 @@
       "name": "SCARLETT",
       "officialUrl": "https://weidian.com/?userid=1655376466&spider_token=6c34",
       "spreadsheetQuery": "SCARLETT",
-      "category": "Scarpe",
+      "category": "Borse & Pelletteria",
       "platform": "Weidian",
       "brands": [
         "Alexander Wang",

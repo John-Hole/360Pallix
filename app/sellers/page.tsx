@@ -136,9 +136,9 @@ export default function SellersPage() {
           </p>
 
           <div className="dir-counts">
-            <span>🏷️ <b>134</b> Brand Ufficiali</span>
+            <span>🏷️ <b>{BRANDS.length}</b> Brand Ufficiali</span>
             <span>•</span>
-            <span>🏪 <b>136</b> Seller Verificati</span>
+            <span>🏪 <b>{SELLERS.length}</b> Seller Verificati</span>
           </div>
         </div>
 
@@ -377,11 +377,29 @@ function BrandCard({ brand }: { brand: BrandItem }) {
           }}
         />
         <div className="brand-cover-overlay">
-          <span className="brand-meta-tag">{brand.category}</span>
-          <h2 className="brand-name">{brand.name}</h2>
-          <span className="brand-sellers-count">
-            {brand.sellersCount} {brand.sellersCount === 1 ? "seller verificato" : "seller verificati"}
-          </span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }}>
+            <div>
+              <span className="brand-meta-tag">{brand.category}</span>
+              <h2 className="brand-name">{brand.name}</h2>
+              <span className="brand-sellers-count">
+                {brand.sellersCount} {brand.sellersCount === 1 ? "seller verificato" : "seller verificati"}
+              </span>
+            </div>
+            <Link
+              href={`/spreadsheet?q=${encodeURIComponent(brand.name)}`}
+              className="seller-btn-find"
+              style={{
+                height: 34,
+                padding: "0 14px",
+                fontSize: 11.5,
+                flexShrink: 0,
+                boxShadow: "0 4px 14px rgba(34, 197, 94, 0.4)",
+              }}
+              title={`Cerca tutti i prodotti ${brand.name} nello Spreadsheet`}
+            >
+              Spreadsheet →
+            </Link>
+          </div>
         </div>
       </div>
 

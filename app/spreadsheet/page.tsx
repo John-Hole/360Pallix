@@ -64,14 +64,39 @@ function SpreadsheetContent() {
   };
 
   const list = useMemo(() => {
-    let l = allProducts.filter(
-      (p) =>
-        (!q || `${p.title} ${p.seller} ${p.brand} ${p.category}`.toLowerCase().includes(q.toLowerCase())) &&
-        (!seller || p.seller === seller) &&
-        (!brand || p.brand === brand) &&
-        (!cat || p.category === cat) &&
-        (!onlyFavs || favs.includes(p.id))
-    );
+    const qTrim = q.trim().toLowerCase();
+    const qNorm = qTrim.replace(/[^a-z0-9]/g, "");
+    const qTokens = qTrim ? qTrim.split(/\s+/).filter(Boolean) : [];
+
+    let l = allProducts.filter((p) => {
+      if (qTrim) {
+        const title = (p.title || "").toLowerCase();
+        const sellerStr = (p.seller || "").toLowerCase();
+        const brandStr = (p.brand || "").toLowerCase();
+        const catStr = (p.category || "").toLowerCase();
+        const haystack = `${title} ${sellerStr} ${brandStr} ${catStr}`;
+        const haystackNorm = haystack.replace(/[^a-z0-9]/g, "");
+
+        const directMatch = haystack.includes(qTrim);
+        const tokensMatch = qTokens.length > 1 && qTokens.every((token) => haystack.includes(token));
+        const normMatch = qNorm.length >= 3 && haystackNorm.includes(qNorm);
+        const sellerTokens = sellerStr.split(/\s+/).filter(Boolean);
+        const sellerMatch =
+          sellerTokens.length > 0 && qNorm.length >= 3 && sellerTokens.every((t) => qNorm.includes(t));
+
+        if (!directMatch && !tokensMatch && !normMatch && !sellerMatch) {
+          return false;
+        }
+      }
+
+      if (seller && p.seller !== seller) return false;
+      if (brand && p.brand !== brand) return false;
+      if (cat && p.category !== cat) return false;
+      if (onlyFavs && !favs.includes(p.id)) return false;
+
+      return true;
+    });
+
     if (order === "asc") {
       l = [...l].sort((a, b) => a.price - b.price);
     }
@@ -102,6 +127,9 @@ function SpreadsheetContent() {
     setCat("");
     setOnlyFavs(false);
     setPage(1);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", "/spreadsheet");
+    }
   };
 
   return (
@@ -111,12 +139,53 @@ function SpreadsheetContent() {
           <Link href="/" className="back">
             ← Home
           </Link>
-          <input
-            className="search"
-            placeholder="Cerca (brand, seller, categoria, titolo)..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+          <div style={{ position: "relative", flex: 1, maxWidth: 780, margin: "0 auto" }}>
+            <input
+              className="search"
+              style={{ width: "100%", margin: 0 }}
+              placeholder="Cerca (brand, seller, categoria, titolo)..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            {q && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQ("");
+                  if (typeof window !== "undefined") {
+                    window.history.replaceState(null, "", "/spreadsheet");
+                  }
+                }}
+                style={{
+                  position: "absolute",
+                  right: 14,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "rgba(255,255,255,0.12)",
+                  border: 0,
+                  color: "#fff",
+                  borderRadius: "50%",
+                  width: 22,
+                  height: 22,
+                  display: "grid",
+                  placeItems: "center",
+                  fontSize: 11,
+                  cursor: "pointer",
+                }}
+                title="Cancella ricerca"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <div className="sheet-nav-pill-group">
+            <Link href="/sellers" className="sheet-nav-pill">
+              🏪 Best Seller
+            </Link>
+            <Link href="/guide" className="sheet-nav-pill">
+              📖 Guida
+            </Link>
+          </div>
         </div>
         <div className="filters">
           <select

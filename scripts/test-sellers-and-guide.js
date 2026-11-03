@@ -28,21 +28,55 @@ for (const b of data.brands) {
   assert(b.name, `Brand missing name: ${JSON.stringify(b)}`);
   assert(b.cover, `Brand missing cover: ${b.name}`);
   assert(Array.isArray(b.sellers), `Brand sellers must be array: ${b.name}`);
+  assert(b.sellers.length > 0, `Brand ${b.name} must have at least 1 seller (got 0)`);
+  assert(b.sellersCount > 0, `Brand ${b.name} sellersCount must be > 0`);
 }
-console.log("  ✅ Tutti i brand hanno campi obbligatori (id, name, cover, sellers).");
+console.log("  ✅ Tutti i brand hanno campi obbligatori e almeno un seller verificato.");
 
-// Test 4: Check key sellers exist
+// Test 4: Check key sellers exist and have correct categories
 const keySellers = ["yolo66", "wwtop", "husky", "goatofficial", "topgoosey", "scarlett"];
 for (const ks of keySellers) {
   const found = data.sellers.find((s) => s.id === ks);
   assert(found, `Key seller ${ks} must exist`);
   assert(found.verified, `Key seller ${ks} must be verified`);
 }
-console.log("  ✅ Seller chiave (YOLO, WWTOP, Husky, Goat Official, TopGoosey, Scarlett) presenti e verificati.");
+const scarlett = data.sellers.find((s) => s.id === "scarlett");
+assert.strictEqual(scarlett.category, "Borse & Pelletteria", "Scarlett category must be 'Borse & Pelletteria'");
+console.log("  ✅ Seller chiave (YOLO, WWTOP, Husky, Goat Official, TopGoosey, Scarlett) presenti e categorie verificate.");
 
 // Test 5: Verify guide page and sellers page exist
 assert(fs.existsSync("app/guide/page.tsx"), "app/guide/page.tsx must exist");
 assert(fs.existsSync("app/sellers/page.tsx"), "app/sellers/page.tsx must exist");
 console.log("  ✅ Pagine dedicate /guide e /sellers presenti nel filesystem.");
+
+// Test 6: Verify Spreadsheet search matching logic against products.json
+const products = JSON.parse(fs.readFileSync("data/products.json", "utf8"));
+function matchProduct(p, q) {
+  const qTrim = q.trim().toLowerCase();
+  const qNorm = qTrim.replace(/[^a-z0-9]/g, "");
+  const qTokens = qTrim ? qTrim.split(/\s+/).filter(Boolean) : [];
+  const title = (p.title || "").toLowerCase();
+  const sellerStr = (p.seller || "").toLowerCase();
+  const brandStr = (p.brand || "").toLowerCase();
+  const catStr = (p.category || "").toLowerCase();
+  const haystack = `${title} ${sellerStr} ${brandStr} ${catStr}`;
+  const haystackNorm = haystack.replace(/[^a-z0-9]/g, "");
+
+  const directMatch = haystack.includes(qTrim);
+  const tokensMatch = qTokens.length > 1 && qTokens.every((token) => haystack.includes(token));
+  const normMatch = qNorm.length >= 3 && haystackNorm.includes(qNorm);
+  const sellerTokens = sellerStr.split(/\s+/).filter(Boolean);
+  const sellerMatch =
+    sellerTokens.length > 0 && qNorm.length >= 3 && sellerTokens.every((t) => qNorm.includes(t));
+
+  return directMatch || tokensMatch || normMatch || sellerMatch;
+}
+
+const testQueries = ["Nike", "Ralph Lauren", "Corteiz", "YOLO", "Jersey Aaaa", "AAAAJersey", "CND ISLAND"];
+for (const query of testQueries) {
+  const matched = products.filter((p) => matchProduct(p, query));
+  assert(matched.length > 0, `Search query "${query}" should match at least one product, matched ${matched.length}`);
+}
+console.log("  ✅ Simulazione ricerca Spreadsheet: query per brand e seller chiave producono risultati accurati.");
 
 console.log("🎉 TUTTI I TEST DELLA DIRECTORY E GUIDA SUPERATI CON SUCCESSO!");

@@ -1,28 +1,35 @@
 const fs = require("fs");
 const path = require("path");
 
-const content = fs.readFileSync(
-  "/home/buco-py/.gemini/antigravity-cli/brain/f325dcc4-486e-4917-8e5e-d9c8400ddf2d/.system_generated/steps/20/content.md",
-  "utf8"
-);
-const scripts = [...content.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)];
-const s13 = scripts[13][1];
-const parsed = eval(s13.replace(/^self\.__next_f\.push\(/, "").replace(/\)$/, ""));
-const str = parsed[1];
-const brandIdx = str.indexOf('{"brands":');
-let depth = 0;
-let endIdx = -1;
-for (let i = brandIdx; i < str.length; i++) {
-  if (str[i] === "{") depth++;
-  else if (str[i] === "}") {
-    depth--;
-    if (depth === 0) {
-      endIdx = i + 1;
-      break;
+let rawData = null;
+const brainPath1 = "/home/buco-py/.gemini/antigravity-cli/brain/f325dcc4-486e-4917-8e5e-d9c8400ddf2d/.system_generated/steps/20/content.md";
+if (fs.existsSync(brainPath1)) {
+  const content = fs.readFileSync(brainPath1, "utf8");
+  const scripts = [...content.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/g)];
+  if (scripts[13]) {
+    const s13 = scripts[13][1];
+    const parsed = eval(s13.replace(/^self\.__next_f\.push\(/, "").replace(/\)$/, ""));
+    const str = parsed[1];
+    const brandIdx = str.indexOf('{"brands":');
+    let depth = 0;
+    let endIdx = -1;
+    for (let i = brandIdx; i < str.length; i++) {
+      if (str[i] === "{") depth++;
+      else if (str[i] === "}") {
+        depth--;
+        if (depth === 0) {
+          endIdx = i + 1;
+          break;
+        }
+      }
     }
+    rawData = JSON.parse(str.slice(brandIdx, endIdx));
   }
 }
-const rawData = JSON.parse(str.slice(brandIdx, endIdx));
+
+if (!rawData && fs.existsSync("data/sellers-directory.json")) {
+  rawData = JSON.parse(fs.readFileSync("data/sellers-directory.json", "utf8"));
+}
 
 function resolveRef(val, root) {
   if (typeof val === "string" && val.startsWith("$d:props:")) {
@@ -57,17 +64,17 @@ function deepResolve(obj, root) {
   }
 }
 
-deepResolve(rawData, rawData);
+if (rawData) deepResolve(rawData, rawData);
 
 // Load lixx sellers
-const lixxContent = fs.readFileSync(
-  "/home/buco-py/.gemini/antigravity-cli/brain/f325dcc4-486e-4917-8e5e-d9c8400ddf2d/.system_generated/steps/36/content.md",
-  "utf8"
-);
-const lixxMatch = lixxContent.match(/const EMBEDDED_SELLERS = (\[[\s\S]*?\]);/);
 let lixxSellers = [];
-if (lixxMatch) {
-  lixxSellers = JSON.parse(lixxMatch[1]);
+const brainPath2 = "/home/buco-py/.gemini/antigravity-cli/brain/f325dcc4-486e-4917-8e5e-d9c8400ddf2d/.system_generated/steps/36/content.md";
+if (fs.existsSync(brainPath2)) {
+  const lixxContent = fs.readFileSync(brainPath2, "utf8");
+  const lixxMatch = lixxContent.match(/const EMBEDDED_SELLERS = (\[[\s\S]*?\]);/);
+  if (lixxMatch) {
+    lixxSellers = JSON.parse(lixxMatch[1]);
+  }
 }
 
 function getBrandCategory(name) {
@@ -142,6 +149,16 @@ function getBrandCategory(name) {
 function inferSellerCategory(name, brands, specialty) {
   const text = (name + " " + Array.from(brands).join(" ") + " " + (specialty || "")).toLowerCase();
   if (
+    text.includes("bag") ||
+    text.includes("luxury") ||
+    text.includes("pelle") ||
+    text.includes("bors") ||
+    text.includes("scarlett") ||
+    text.includes("wallet")
+  ) {
+    return "Borse & Pelletteria";
+  }
+  if (
     text.includes("shoe") ||
     text.includes("sneaker") ||
     text.includes("dunk") ||
@@ -154,16 +171,6 @@ function inferSellerCategory(name, brands, specialty) {
     text.includes("umkao")
   ) {
     return "Scarpe";
-  }
-  if (
-    text.includes("bag") ||
-    text.includes("luxury") ||
-    text.includes("pelle") ||
-    text.includes("bors") ||
-    text.includes("scarlett") ||
-    text.includes("wallet")
-  ) {
-    return "Borse & Pelletteria";
   }
   if (
     text.includes("goose") ||
@@ -348,6 +355,21 @@ const brandsList = rawData.brands
         spreadsheetQuery: s.spreadsheetSeller || s.name.trim(),
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
+
+    if (brandSellers.length === 0 && b.name.toLowerCase() === "wallet") {
+      brandSellers.push(
+        {
+          name: "SCARLETT",
+          officialUrl: "https://weidian.com/?userid=1655376466&spider_token=6c34",
+          spreadsheetQuery: "SCARLETT",
+        },
+        {
+          name: "Poshreps",
+          officialUrl: "https://poshrep.x.yupoo.com/albums/",
+          spreadsheetQuery: "POSHREP",
+        }
+      );
+    }
 
     return {
       id: b.id || norm(b.name),

@@ -212,6 +212,7 @@ export default function GuidePage() {
                   src="https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&w=400&q=80"
                   alt="QC inspection angle 1"
                   loading="lazy"
+                  referrerPolicy="no-referrer"
                 />
               </div>
               <div className="qc-stack-img p2">
@@ -219,6 +220,7 @@ export default function GuidePage() {
                   src="https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=400&q=80"
                   alt="QC inspection angle 2"
                   loading="lazy"
+                  referrerPolicy="no-referrer"
                 />
               </div>
               <div className="qc-stack-img p3">
@@ -226,6 +228,7 @@ export default function GuidePage() {
                   src="https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&w=400&q=80"
                   alt="QC inspection angle 3"
                   loading="lazy"
+                  referrerPolicy="no-referrer"
                 />
               </div>
             </div>

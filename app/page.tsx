@@ -92,7 +92,21 @@ export default function Home() {
               marginTop: "var(--py,0)",
             }}
           >
-            <Link className="hero-pill" href={p.href}>
+            <Link
+              className="hero-pill"
+              href={p.href}
+              onClick={(e) => {
+                if (p.href.startsWith("/#")) {
+                  const targetId = p.href.slice(2);
+                  const el = document.getElementById(targetId);
+                  if (el) {
+                    e.preventDefault();
+                    el.scrollIntoView({ behavior: "smooth" });
+                    window.history.pushState(null, "", `#${targetId}`);
+                  }
+                }
+              }}
+            >
               {p.label}
             </Link>
           </div>
