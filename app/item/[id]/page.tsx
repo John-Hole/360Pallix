@@ -30,7 +30,7 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
           <div className="eyebrow">{p.category}</div>
           <h1>{p.title}</h1>
           <div className="kv"><span>Prezzo</span><b>{eur(p.price)}</b></div>
-          <div className="kv"><span>Prezzo originale</span><b style={{ color: "#86efac" }}>{rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}</b></div>
+          <div className="kv"><span>Prezzo originale</span><b style={{ color: "#a1a1aa" }}>{rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}</b></div>
           {p.seller && p.seller !== "—" && p.seller !== "-" && (
             <div className="kv"><span>Seller</span><b>{p.seller}</b></div>
           )}
@@ -48,9 +48,11 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
                   textAlign: "center",
                   padding: "12px 20px",
                   fontSize: 14,
-                  background: "linear-gradient(90deg, #16a34a, #15803d)",
-                  borderColor: "rgba(34, 197, 94, 0.4)",
-                  boxShadow: "0 8px 24px rgba(22, 163, 74, 0.35)",
+                  fontWeight: 700,
+                  color: "#000000",
+                  background: "#ffffff",
+                  borderColor: "#ffffff",
+                  boxShadow: "0 8px 24px rgba(0, 0, 0, 0.35)",
                 }}
                 href={p.cssbuyUrl}
                 target="_blank"
@@ -69,9 +71,11 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
                   textAlign: "center",
                   padding: "12px 20px",
                   fontSize: 14,
-                  background: "linear-gradient(90deg, #6366f1, #4f46e5)",
-                  borderColor: "rgba(99, 102, 241, 0.4)",
-                  boxShadow: "0 8px 24px rgba(79, 70, 229, 0.35)",
+                  fontWeight: 600,
+                  color: "#ffffff",
+                  background: "rgba(255, 255, 255, 0.08)",
+                  borderColor: "rgba(255, 255, 255, 0.16)",
+                  boxShadow: "none",
                 }}
                 href={doppelUrl}
                 target="_blank"

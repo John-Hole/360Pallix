@@ -152,7 +152,7 @@ export default function Home() {
                           style={{
                             fontSize: 11,
                             fontWeight: 700,
-                            color: "#4ade80",
+                            color: "#ffffff",
                             background: "rgba(0,0,0,0.5)",
                             padding: "2px 8px",
                             borderRadius: 999,
@@ -161,7 +161,7 @@ export default function Home() {
                           }}
                         >
                           {eur(p.price)}{" "}
-                          <span style={{ fontSize: 9.5, color: "#86efac", opacity: 0.85, fontWeight: 500 }}>
+                          <span style={{ fontSize: 9.5, color: "#a1a1aa", opacity: 0.85, fontWeight: 500 }}>
                             {rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}
                           </span>
                         </span>
@@ -218,7 +218,7 @@ export default function Home() {
                     }}
                   />
                   <div className="seller-card-badges">
-                    <span className="badge-green">✓ VERIFIED</span>
+                    <span className="badge-verified">✓ VERIFIED</span>
                     <span
                       style={{
                         fontSize: 10,
@@ -277,12 +277,6 @@ export default function Home() {
                         Store n.d.
                       </span>
                     )}
-                    <Link
-                      href={`/spreadsheet?q=${encodeURIComponent(s.spreadsheetQuery || s.name)}`}
-                      className="seller-btn-find"
-                    >
-                      Spreadsheet →
-                    </Link>
                   </div>
                 </div>
               </div>
@@ -290,7 +284,7 @@ export default function Home() {
           </div>
 
           <div className="reveal" style={{ marginTop: 32, textAlign: "center" }}>
-            <Link className="cta-green" href="/sellers">
+            <Link className="cta" href="/sellers">
               Esplora tutti i Seller (130+) →
             </Link>
           </div>
@@ -413,7 +407,7 @@ export default function Home() {
           </div>
 
           <div className="reveal" style={{ marginTop: 32, textAlign: "center" }}>
-            <Link className="cta-green" href="/guide">
+            <Link className="cta" href="/guide">
               Leggi la Guida Completa (Step by Step) →
             </Link>
           </div>

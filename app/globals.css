@@ -76,16 +76,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* ---------- scroll sections ---------- */
 .section { position: relative; padding: clamp(72px, 12vw, 140px) 20px; overflow: hidden; }
-.section::before { content: ""; position: absolute; inset: 0; background: radial-gradient(50% 40% at 20% 10%, rgba(185,130,255,.12), transparent 70%), radial-gradient(40% 40% at 85% 80%, rgba(140,255,210,.08), transparent 70%); pointer-events: none; }
+.section::before { content: ""; position: absolute; inset: 0; background: radial-gradient(50% 40% at 20% 10%, rgba(255,255,255,.05), transparent 70%), radial-gradient(40% 40% at 85% 80%, rgba(255,255,255,.03), transparent 70%); pointer-events: none; }
 .wrap { position: relative; max-width: 1200px; margin: 0 auto; }
 .sec-title { margin: 8px 0 0; font-size: clamp(34px, 6vw, 64px); font-weight: 800; letter-spacing: -.03em; }
 .sec-sub { color: rgba(255,255,255,.55); margin-top: 8px; }
 .cta {
   display: inline-flex; align-items: center; justify-content: center; height: 56px; padding: 0 28px; margin-top: 24px; border-radius: 999px;
-  font-size: 14px; font-weight: 800; letter-spacing: .02em; color: rgba(10,10,10,.95); background: linear-gradient(135deg, #b982ff, #8cffd2);
-  box-shadow: 0 38px 130px rgba(0,0,0,.72), inset 0 1px rgba(255,255,255,.45); transition: transform .22s var(--ease), filter .22s;
+  font-size: 14px; font-weight: 800; letter-spacing: .02em; color: #000000; background: #ffffff;
+  box-shadow: 0 20px 60px rgba(0,0,0,.6), inset 0 1px rgba(255,255,255,.45); transition: transform .22s var(--ease), filter .22s, background .22s;
 }
-.cta:hover { transform: translateY(-2px); filter: brightness(1.06); }
+.cta:hover { transform: translateY(-2px); background: #f4f4f5; }
 .cta.ghost { color: #fff; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18); box-shadow: none; }
 .reveal { opacity: 0; transform: translateY(28px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
 .reveal.in { opacity: 1; transform: none; }
@@ -127,7 +127,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .sheet-sub .sp { flex: 1; }
 .pillbtn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border-radius: 999px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16); }
 .pillbtn.on { border-color: rgba(255,120,150,.6); color: #ff9db0; }
-.shuffle { color: #0a0a0a; font-size: 14px; font-weight: 700; border: 0; background: linear-gradient(135deg, #b982ff, #8cffd2); height: 42px; padding: 0 22px; }
+.shuffle { color: #000000; font-size: 14px; font-weight: 700; border: 0; background: #ffffff; height: 42px; padding: 0 22px; border-radius: 999px; transition: background .2s, transform .2s; }
+.shuffle:hover { background: #f4f4f5; transform: translateY(-1px); }
 
 .grid { display: grid; gap: 16px; max-width: 1700px; margin: 0 auto; padding: 24px 20px 56px; grid-template-columns: repeat(2, 1fr); }
 @media (max-width: 419px) { .grid { grid-template-columns: 1fr; } }
@@ -144,7 +145,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .card-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
 .card:hover .card-media img { transform: scale(1.04); }
 .price { position: absolute; left: 12px; top: 12px; z-index: 2; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.18); backdrop-filter: blur(8px); display: inline-flex; align-items: center; gap: 5px; }
-.price-rmb { opacity: .75; font-size: 10px; font-weight: 500; color: #86efac; }
+.price-rmb { opacity: .75; font-size: 10px; font-weight: 500; color: #a1a1aa; }
 .fav { position: absolute; right: 12px; top: 12px; z-index: 5; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.15); backdrop-filter: blur(8px); color: rgba(255,255,255,.8); transition: .2s; }
 .fav:hover, .fav.on { color: #fda4af; background: rgba(0,0,0,.55); }
 .fav.on svg path { fill: currentColor; }
@@ -437,7 +438,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .table-price-rmb {
   font-size: 11px;
-  color: #86efac;
+  color: #a1a1aa;
   opacity: 0.85;
   margin-top: 2px;
   white-space: nowrap;
@@ -460,20 +461,22 @@ button { font: inherit; color: inherit; cursor: pointer; }
   white-space: nowrap;
 }
 .table-aff-cssbuy {
-  background: rgba(34, 197, 94, 0.14);
-  border: 1px solid rgba(34, 197, 94, 0.35);
-  color: #4ade80;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
 }
 .table-aff-cssbuy:hover {
-  background: rgba(34, 197, 94, 0.28);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 .table-aff-doppel {
-  background: rgba(99, 102, 241, 0.14);
-  border: 1px solid rgba(99, 102, 241, 0.35);
-  color: #a5b4fc;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
 }
 .table-aff-doppel:hover {
-  background: rgba(99, 102, 241, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 .table-actions {
   display: flex;
@@ -482,7 +485,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   white-space: nowrap;
 }
 
-/* ---------- green cta buttons & badges ---------- */
+/* ---------- cta buttons & badges (monochromatic) ---------- */
 .cta-green {
   display: inline-flex;
   align-items: center;
@@ -494,20 +497,22 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-size: 14px;
   font-weight: 800;
   letter-spacing: .02em;
-  color: #050505;
-  background: linear-gradient(135deg, #4ade80, #22c55e);
-  box-shadow: 0 16px 40px rgba(34, 197, 94, 0.28), inset 0 1px rgba(255, 255, 255, 0.45);
-  transition: transform .22s var(--ease), filter .22s, box-shadow .22s;
+  color: #000000;
+  background: #ffffff;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px rgba(255, 255, 255, 0.45);
+  transition: transform .22s var(--ease), filter .22s, box-shadow .22s, background .22s;
   border: 0;
   text-decoration: none;
   cursor: pointer;
 }
 .cta-green:hover {
   transform: translateY(-2px);
-  filter: brightness(1.08);
-  box-shadow: 0 20px 50px rgba(34, 197, 94, 0.4);
+  background: #f4f4f5;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
 }
-.badge-green {
+.badge-green,
+.badge-verified,
+.badge-dark {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -516,9 +521,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .06em;
-  background: rgba(34, 197, 94, 0.16);
-  border: 1px solid rgba(34, 197, 94, 0.35);
-  color: #4ade80;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #ffffff;
   backdrop-filter: blur(8px);
 }
 
@@ -547,9 +552,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .step-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(74, 222, 128, 0.35);
+  border-color: rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(34, 197, 94, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 255, 255, 0.04);
 }
 .step-card-header {
   display: flex;
@@ -561,9 +566,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   width: 44px;
   height: 44px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(74, 222, 128, 0.2), rgba(34, 197, 94, 0.1));
-  border: 1px solid rgba(74, 222, 128, 0.35);
-  color: #4ade80;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #ffffff;
   font-size: 18px;
   font-weight: 800;
   display: grid;
@@ -594,7 +599,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   font-size: 12px;
-  color: #86efac;
+  color: rgba(255, 255, 255, 0.7);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -607,22 +612,22 @@ button { font: inherit; color: inherit; cursor: pointer; }
   gap: 12px;
   padding: 14px 18px;
   border-radius: 16px;
-  background: rgba(34, 197, 94, 0.08);
-  border: 1px solid rgba(34, 197, 94, 0.22);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   margin-top: 16px;
 }
 .pro-tip-box.blue {
-  background: rgba(59, 130, 246, 0.08);
-  border-color: rgba(59, 130, 246, 0.25);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 .pro-tip-title {
   font-size: 12.5px;
   font-weight: 700;
-  color: #4ade80;
+  color: #ffffff;
   margin-bottom: 3px;
 }
 .pro-tip-box.blue .pro-tip-title {
-  color: #60a5fa;
+  color: #ffffff;
 }
 .pro-tip-text {
   font-size: 12px;
@@ -725,7 +730,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   cursor: pointer;
 }
 .faq-btn:focus-visible {
-  outline: 2px solid #22c55e;
+  outline: 2px solid rgba(255, 255, 255, 0.4);
 }
 .faq-chevron {
   width: 20px;
@@ -736,7 +741,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .faq-item.open .faq-chevron {
   transform: rotate(180deg);
-  color: #4ade80;
+  color: #ffffff;
 }
 .faq-answer {
   padding: 0 22px 20px;
@@ -772,7 +777,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   letter-spacing: -.03em;
 }
 .dir-title-accent {
-  background: linear-gradient(135deg, #4ade80, #86efac);
+  background: linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.65) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -829,9 +834,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   background: rgba(255, 255, 255, 0.08);
 }
 .dir-switcher-btn.active {
-  color: #050505;
-  background: linear-gradient(135deg, #4ade80, #22c55e);
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+  color: #000000;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
 /* filter bar sticky */
@@ -884,9 +889,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   transition: border-color 0.2s, background 0.2s;
 }
 .dir-search-input:focus {
-  border-color: rgba(74, 222, 128, 0.5);
+  border-color: rgba(255, 255, 255, 0.35);
   background: rgba(255, 255, 255, 0.09);
-  box-shadow: 0 0 16px rgba(34, 197, 94, 0.15);
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.08);
 }
 .dir-cat-pills {
   display: flex;
@@ -921,9 +926,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-color: rgba(255, 255, 255, 0.25);
 }
 .dir-cat-pill.active {
-  background: rgba(34, 197, 94, 0.18);
-  border-color: rgba(74, 222, 128, 0.5);
-  color: #4ade80;
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #000000;
   font-weight: 700;
 }
 
@@ -980,7 +985,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.16em;
-  color: #4ade80;
+  color: rgba(255, 255, 255, 0.6);
   margin-bottom: 4px;
 }
 .brand-name {
@@ -1030,47 +1035,33 @@ button { font: inherit; color: inherit; cursor: pointer; }
   text-overflow: ellipsis;
 }
 .brand-seller-btns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  display: flex;
+  width: 100%;
 }
 .brand-btn-shop {
-  height: 32px;
+  width: 100%;
+  height: 34px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: #fff;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   text-decoration: none;
   transition: all 0.2s;
   white-space: nowrap;
 }
 .brand-btn-shop:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+  transform: translateY(-1px);
 }
 .brand-btn-sheet {
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 700;
-  color: #050505;
-  background: linear-gradient(135deg, #4ade80, #22c55e);
-  border: 0;
-  text-decoration: none;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-.brand-btn-sheet:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
+  display: none;
 }
 
 /* sellers grid */
@@ -1105,7 +1096,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .seller-dir-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(74, 222, 128, 0.35);
+  border-color: rgba(255, 255, 255, 0.28);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
 }
 .seller-card-top {
@@ -1151,7 +1142,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .seller-card-spec {
   font-size: 12px;
   font-weight: 700;
-  color: #4ade80;
+  color: rgba(255, 255, 255, 0.7);
   margin-bottom: 8px;
   display: flex;
   align-items: center;
@@ -1180,18 +1171,18 @@ button { font: inherit; color: inherit; cursor: pointer; }
   color: rgba(255, 255, 255, 0.8);
 }
 .seller-card-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  width: 100%;
   margin-top: auto;
 }
 .seller-btn-store {
-  height: 38px;
+  width: 100%;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: #fff;
   background: rgba(255, 255, 255, 0.08);
@@ -1202,6 +1193,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .seller-btn-store:hover {
   background: rgba(255, 255, 255, 0.16);
   border-color: rgba(255, 255, 255, 0.35);
+  color: #fff;
+  transform: translateY(-1px);
 }
 .seller-btn-find {
   height: 38px;
@@ -1211,14 +1204,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
   border-radius: 12px;
   font-size: 12px;
   font-weight: 700;
-  color: #050505;
-  background: linear-gradient(135deg, #4ade80, #22c55e);
-  border: 0;
+  color: #000000;
+  background: #ffffff;
+  border: 1px solid #ffffff;
   text-decoration: none;
   transition: all 0.2s;
 }
 .seller-btn-find:hover {
-  filter: brightness(1.1);
+  background: #f4f4f5;
+  border-color: #f4f4f5;
   transform: translateY(-1px);
 }
 

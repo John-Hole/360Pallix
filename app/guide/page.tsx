@@ -98,7 +98,7 @@ export default function GuidePage() {
         {/* Header */}
         <div className="dir-header" style={{ marginTop: 20 }}>
           <div style={{ display: "inline-flex", gap: 8, marginBottom: 12 }}>
-            <span className="badge-green">GUIDA UFFICIALE 360PALLIX</span>
+            <span className="badge-verified">GUIDA UFFICIALE 360PALLIX</span>
             <span
               style={{
                 fontSize: 11,
@@ -306,7 +306,7 @@ export default function GuidePage() {
                   padding: 16,
                 }}
               >
-                <div style={{ color: "#4ade80", fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Dichiarazione Doganale</div>
+                <div style={{ color: "#ffffff", fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Dichiarazione Doganale</div>
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.5 }}>
                   Dichiara un valore tra <b>16$ e 21$</b> con decimali casuali (es. 18.73$) per l'intero pacco sulle linee Tax-Free.
                 </div>
@@ -320,7 +320,7 @@ export default function GuidePage() {
                   padding: 16,
                 }}
               >
-                <div style={{ color: "#4ade80", fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Assicurazione Pacco</div>
+                <div style={{ color: "#ffffff", fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Assicurazione Pacco</div>
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.5 }}>
                   Aggiungi sempre l'assicurazione: costa solo il ~3% e protegge al 100% valore merce e spedizione.
                 </div>
@@ -334,7 +334,7 @@ export default function GuidePage() {
                   padding: 16,
                 }}
               >
-                <div style={{ color: "#4ade80", fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Tempi di Consegna</div>
+                <div style={{ color: "#ffffff", fontWeight: 700, fontSize: 13, marginBottom: 4 }}>Tempi di Consegna</div>
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.5 }}>
                   Circa <b>9-14 giorni lavorativi</b> con tracciamento completo su 17track e DHL fino al tuo campanello.
                 </div>
@@ -373,7 +373,7 @@ export default function GuidePage() {
                   padding: 16,
                 }}
               >
-                <div style={{ color: "#4ade80", fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{term.t}</div>
+                <div style={{ color: "#ffffff", fontWeight: 700, fontSize: 13, marginBottom: 4 }}>{term.t}</div>
                 <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>{term.d}</div>
               </div>
             ))}
@@ -431,11 +431,11 @@ export default function GuidePage() {
             textAlign: "center",
             position: "relative",
             overflow: "hidden",
-            border: "1px solid rgba(74, 222, 128, 0.25)",
-            background: "radial-gradient(80% 80% at 50% 0%, rgba(34, 197, 94, 0.12), rgba(0,0,0,0.6))",
+            border: "1px solid rgba(255, 255, 255, 0.12)",
+            background: "radial-gradient(80% 80% at 50% 0%, rgba(255, 255, 255, 0.06), rgba(0,0,0,0.6))",
           }}
         >
-          <span className="badge-green">INIZIA ORA</span>
+          <span className="badge-verified">INIZIA ORA</span>
           <h3 style={{ fontSize: "clamp(24px, 4vw, 36px)", margin: "14px 0 10px", fontWeight: 800 }}>
           Tutto chiaro? Trova il tuo prossimo affare!
           </h3>
@@ -444,7 +444,7 @@ export default function GuidePage() {
           </p>
 
           <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 12 }}>
-            <Link href="/spreadsheet" className="cta-green">
+            <Link href="/spreadsheet" className="cta">
               Apri lo Spreadsheet →
             </Link>
             <Link href="/sellers" className="cta ghost" style={{ marginTop: 0 }}>

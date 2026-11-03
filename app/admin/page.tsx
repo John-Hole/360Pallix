@@ -542,13 +542,13 @@ export default function AdminPage() {
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 8,
-                background: "rgba(34, 197, 94, 0.12)",
-                border: "1px solid rgba(34, 197, 94, 0.35)",
+                background: "rgba(255, 255, 255, 0.06)",
+                border: "1px solid rgba(255, 255, 255, 0.14)",
                 borderRadius: 999,
                 padding: "6px 14px",
                 fontSize: 12,
                 fontWeight: 600,
-                color: "#4ade80",
+                color: "#ffffff",
               }}
               title="Sessione locale autenticata automaticamente"
             >
@@ -558,8 +558,8 @@ export default function AdminPage() {
                   width: 7,
                   height: 7,
                   borderRadius: "50%",
-                  background: "#22c55e",
-                  boxShadow: "0 0 10px #22c55e",
+                  background: "#ffffff",
+                  boxShadow: "0 0 8px rgba(255, 255, 255, 0.6)",
                 }}
               />
               <span>Admin Autenticato</span>
@@ -663,8 +663,8 @@ export default function AdminPage() {
                   className="back"
                   onClick={() => setTab("insert")}
                   style={{
-                    background: "linear-gradient(135deg, #b982ff, #8cffd2)",
-                    color: "#0a0a0c",
+                    background: "#ffffff",
+                    color: "#000000",
                     fontWeight: 700,
                     border: 0,
                     cursor: "pointer",
@@ -1296,7 +1296,7 @@ export default function AdminPage() {
 
               {/* Link CSSBuy & Doppelfit */}
               <div>
-                <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "#4ade80", fontWeight: 600 }}>
+                <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "#ffffff", fontWeight: 600 }}>
                   🛒 Link Affiliato CSSBuy
                 </label>
                 <input
@@ -1304,7 +1304,7 @@ export default function AdminPage() {
                   value={insertForm.cssbuyUrl}
                   onChange={setInsertField("cssbuyUrl")}
                   placeholder="https://www.cssbuy.com/shop/goodsDetail?promotionCode=..."
-                  style={{ ...inputStyle, borderColor: "rgba(34, 197, 94, 0.4)" }}
+                  style={{ ...inputStyle, borderColor: "rgba(255, 255, 255, 0.2)" }}
                 />
               </div>
 
@@ -1328,13 +1328,13 @@ export default function AdminPage() {
                   marginTop: 8,
                   padding: "14px 28px",
                   borderRadius: 14,
-                  background: "linear-gradient(90deg, #16a34a, #15803d)",
+                  background: "#ffffff",
                   border: 0,
-                  color: "#fff",
+                  color: "#000000",
                   fontWeight: 700,
                   fontSize: 15,
                   cursor: insertSaving ? "wait" : "pointer",
-                  boxShadow: "0 10px 30px rgba(22, 163, 74, 0.35)",
+                  boxShadow: "0 10px 30px rgba(0, 0, 0, 0.4)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -1621,7 +1621,7 @@ export default function AdminPage() {
 
                 {/* CSSBuy URL */}
                 <div>
-                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "#4ade80", fontWeight: 600 }}>
+                  <label style={{ display: "block", fontSize: 13, marginBottom: 6, color: "#ffffff", fontWeight: 600 }}>
                     🛒 Link Affiliato CSSBuy
                   </label>
                   <input
@@ -1629,7 +1629,7 @@ export default function AdminPage() {
                     value={editForm.cssbuyUrl}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, cssbuyUrl: e.target.value }))}
                     placeholder="https://www.cssbuy.com/shop/goodsDetail?promotionCode=..."
-                    style={{ ...inputStyle, borderColor: "rgba(34, 197, 94, 0.4)" }}
+                    style={{ ...inputStyle, borderColor: "rgba(255, 255, 255, 0.2)" }}
                   />
                 </div>
 

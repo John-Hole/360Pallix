@@ -79,4 +79,36 @@ for (const query of testQueries) {
 }
 console.log("  ✅ Simulazione ricerca Spreadsheet: query per brand e seller chiave producono risultati accurati.");
 
+// Test 7: Verify green Yupoo cover was completely replaced in sellers-directory.json
+const rawDirContent = fs.readFileSync("data/sellers-directory.json", "utf8");
+assert(!rawDirContent.includes("9c76e296b24d4dd98e1200e14df92f8e.jpg"), "Green Yupoo cover must be replaced");
+console.log("  ✅ Copertina verde Yupoo rimossa al 100% da sellers-directory.json.");
+
+// Test 8: Verify seller boxes in Home and /sellers have single store button and NO spreadsheet button
+const homePageContent = fs.readFileSync("app/page.tsx", "utf8");
+const sellersPageContent = fs.readFileSync("app/sellers/page.tsx", "utf8");
+assert(!homePageContent.includes("seller-btn-find"), "Home seller cards must NOT contain seller-btn-find Spreadsheet button");
+assert(!sellersPageContent.includes("brand-btn-sheet"), "Brand seller cards must NOT contain brand-btn-sheet Spreadsheet button");
+const sellerCardActionsMatches = (sellersPageContent.match(/className="seller-btn-find"/g) || []).length;
+assert.strictEqual(sellerCardActionsMatches, 1, "Only the brand header search button should use seller-btn-find, not seller cards");
+console.log("  ✅ Pulsante unico (Sito store ↗) nei box seller verificato con successo (Spreadsheet rimosso).");
+
+// Test 9: Verify no green hex colors in UI files
+const greenHexes = ["#22c55e", "#4ade80", "#86efac", "#16a34a", "#15803d"];
+const uiFiles = [
+  "app/globals.css",
+  "app/page.tsx",
+  "app/sellers/page.tsx",
+  "app/guide/page.tsx",
+  "app/item/[id]/page.tsx",
+  "app/admin/page.tsx",
+];
+for (const file of uiFiles) {
+  const content = fs.readFileSync(file, "utf8");
+  for (const hex of greenHexes) {
+    assert(!content.toLowerCase().includes(hex), `File ${file} contains green color ${hex}`);
+  }
+}
+console.log("  ✅ Restyling 100% monocromatico: nessun colore verde residuo trovato.");
+
 console.log("🎉 TUTTI I TEST DELLA DIRECTORY E GUIDA SUPERATI CON SUCCESSO!");

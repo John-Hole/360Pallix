@@ -110,7 +110,7 @@ export default function SellersPage() {
         {/* Header */}
         <div className="dir-header">
           <div style={{ display: "inline-flex", gap: 8, marginBottom: 12 }}>
-            <span className="badge-green">DIRECTORY VERIFICATA</span>
+            <span className="badge-verified">DIRECTORY VERIFICATA</span>
             <span
               style={{
                 fontSize: 11,
@@ -260,7 +260,7 @@ export default function SellersPage() {
                   style={{
                     background: "transparent",
                     border: 0,
-                    color: "#4ade80",
+                    color: "#ffffff",
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: "pointer",
@@ -286,7 +286,7 @@ export default function SellersPage() {
                 <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", margin: "0 0 16px" }}>
                   Nessun marchio corrisponde a &quot;{search}&quot;. Prova a cercare un altro nome o seleziona un&apos;altra categoria.
                 </p>
-                <button type="button" className="cta-green" onClick={resetFilters}>
+                <button type="button" className="cta" onClick={resetFilters}>
                   Resetta tutti i filtri
                 </button>
               </div>
@@ -311,7 +311,7 @@ export default function SellersPage() {
                   style={{
                     background: "transparent",
                     border: 0,
-                    color: "#4ade80",
+                    color: "#ffffff",
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: "pointer",
@@ -337,7 +337,7 @@ export default function SellersPage() {
                 <p style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", margin: "0 0 16px" }}>
                   Nessun venditore corrisponde a &quot;{search}&quot;. Prova a verificare l&apos;ortografia o reimposta i filtri.
                 </p>
-                <button type="button" className="cta-green" onClick={resetFilters}>
+                <button type="button" className="cta" onClick={resetFilters}>
                   Resetta tutti i filtri
                 </button>
               </div>
@@ -393,7 +393,7 @@ function BrandCard({ brand }: { brand: BrandItem }) {
                 padding: "0 14px",
                 fontSize: 11.5,
                 flexShrink: 0,
-                boxShadow: "0 4px 14px rgba(34, 197, 94, 0.4)",
+                boxShadow: "0 4px 14px rgba(0, 0, 0, 0.35)",
               }}
               title={`Cerca tutti i prodotti ${brand.name} nello Spreadsheet`}
             >
@@ -428,13 +428,6 @@ function BrandCard({ brand }: { brand: BrandItem }) {
                   Store n.d.
                 </span>
               )}
-              <Link
-                href={`/spreadsheet?q=${encodeURIComponent(s.spreadsheetQuery || s.name)}`}
-                className="brand-btn-sheet"
-                title="Cerca prodotti di questo seller nello Spreadsheet"
-              >
-                Spreadsheet →
-              </Link>
             </div>
           </div>
         ))}
@@ -465,7 +458,7 @@ function SellerCard({ seller }: { seller: SellerItem }) {
           }}
         />
         <div className="seller-card-badges">
-          <span className="badge-green">✓ VERIFIED</span>
+          <span className="badge-verified">✓ VERIFIED</span>
           <span
             style={{
               fontSize: 10,
@@ -520,7 +513,7 @@ function SellerCard({ seller }: { seller: SellerItem }) {
             {seller.brands.length > 4 && (
               <span
                 className="seller-brand-tag"
-                style={{ background: "rgba(74,222,128,0.1)", color: "#4ade80", borderColor: "rgba(74,222,128,0.25)" }}
+                style={{ background: "rgba(255,255,255,0.08)", color: "#ffffff", borderColor: "rgba(255,255,255,0.18)" }}
               >
                 +{seller.brands.length - 4} altri
               </span>
@@ -544,13 +537,6 @@ function SellerCard({ seller }: { seller: SellerItem }) {
               Store n.d.
             </span>
           )}
-          <Link
-            href={`/spreadsheet?q=${encodeURIComponent(seller.spreadsheetQuery || seller.name)}`}
-            className="seller-btn-find"
-            title="Cerca prodotti di questo seller nello Spreadsheet"
-          >
-            Spreadsheet →
-          </Link>
         </div>
       </div>
     </div>
