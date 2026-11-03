@@ -5,11 +5,11 @@ import { PRODUCTS, eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
 import { getTopVerifiedSellers, type SellerItem } from "@/lib/sellers";
 
 const PILLS = [
-  { label: "Spreadsheet", href: "/spreadsheet", x: "min(28vw, 400px)", y: "-22vh", d: "0s" },
-  { label: "Coupon", href: "/coupon", x: "max(-28vw, -400px)", y: "-22vh", d: "-2s" },
-  { label: "Tutorial", href: "/guide", x: "max(-26vw, -380px)", y: "20vh", d: "-4s" },
-  { label: "Best Seller", href: "/sellers", x: "min(26vw, 380px)", y: "20vh", d: "-1s" },
-  { label: "Regole Dogana UE", href: "/dogana", x: "0px", y: "-30vh", d: "-3s" },
+  { label: "Spreadsheet", href: "/spreadsheet", x: "min(30vw, 380px)", y: "-18vh", d: "0s" },
+  { label: "Coupon", href: "/coupon", x: "max(-30vw, -380px)", y: "-18vh", d: "-2s" },
+  { label: "Tutorial", href: "/guide", x: "max(-26vw, -360px)", y: "21vh", d: "-4s" },
+  { label: "Best Seller", href: "/sellers", x: "min(26vw, 360px)", y: "21vh", d: "-1s" },
+  { label: "Regole Dogana UE", href: "/dogana", x: "0px", y: "-31vh", d: "-3s" },
 ];
 
 const TUTORIAL_FAQS = [

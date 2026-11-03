@@ -21,8 +21,16 @@ const DOGANA_FAQS: FaqItem[] = [
     a: "No. CSSBuy adegua automaticamente tutti i requisiti tecnici previsti dalle nuove regole europee sul Product Identification (PID). Puoi continuare a dichiarare il tuo pacco esattamente come facevi prima, inserendo 1 o 2 righe descrittive standard con importo compreso tra 16.00$ e 21.00$ e decimali casuali (es. 18.73$).",
   },
   {
+    q: "Dove posso chiedere aiuto se ho dubbi sulla dichiarazione del mio pacco?",
+    a: "Puoi utilizzare la sezione dedicata 🧾 declaration-help su CSSBuy. Il supporto specializzato è a tua disposizione per consigliarti le categorie merceologiche e i valori ottimali da inserire.",
+  },
+  {
     q: "Quanto può incidere al massimo la nuova tassa di 2€?",
     a: "La tassa europea ammonta a 2,00€ per ciascuna riga di dichiarazione (declaration line). Poiché il sistema di spedizione di CSSBuy consente al massimo 2 righe di dichiarazione per pacco, il costo massimo teorico applicabile dalla dogana è di soli 4,00€. Sulle linee Tax-Free, questo importo viene comunque assorbito da CSSBuy.",
+  },
+  {
+    q: "Cosa succede se in futuro la handling fee dovesse essere prepagata al momento dell'ordine?",
+    a: "Se in futuro le compagnie di logistica dovessero richiedere il pagamento anticipato anziché l'assorbimento, CSSBuy integrerà la quota (massimo 4€ complessivi) direttamente nel preventivo di spedizione alla sottomissione del pacco. In nessun caso sulle linee triangolate ti verrà richiesta una somma alla consegna, né il pacco potrà subire un doppio addebito.",
   },
   {
     q: "Cosa succede se invece ho spedito con corrieri postali tradizionali (EMS, SAL, China Post)?",
@@ -161,6 +169,46 @@ export default function DoganaPage() {
             <span>📅 Aggiornato: Novembre 2026</span>
             <span>•</span>
             <span>⚖️ Fonte: Riforma Codice Doganale UE (UCC) & Note Ufficiali CSSBuy</span>
+          </div>
+        </div>
+
+        {/* In Sintesi - Long Story Short Box */}
+        <div
+          style={{
+            marginTop: 32,
+            padding: "24px 28px",
+            borderRadius: 20,
+            background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))",
+            border: "1px solid rgba(255,255,255,0.15)",
+            boxShadow: "0 14px 40px rgba(0,0,0,0.45)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+            <span style={{ fontSize: 20 }}>⚡</span>
+            <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "#fff" }}>
+              In Sintesi · Long Story Short
+            </span>
+          </div>
+          <p style={{ fontSize: 14.5, lineHeight: 1.6, color: "rgba(255,255,255,0.85)", margin: "0 0 16px" }}>
+            CSSBuy gestisce direttamente tutti i requisiti introdotti dalla riforma doganale europea dell&apos;1 Novembre 2026. Puoi continuare a spedire ed effettuare i tuoi ordini in totale serenità senza dover cambiare abitudini:
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 12, fontSize: 13, color: "rgba(255,255,255,0.75)" }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <span>✓</span>
+              <span><strong>Handling Fee coperta:</strong> La tassa di 2€ a riga è assorbita da CSSBuy sulle rotte Tax-Free triangolate.</span>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <span>✓</span>
+              <span><strong>Impatto max 4€:</strong> Con il limite CSSBuy di 2 righe, l&apos;esborso doganale non supera mai 4€ per pacco.</span>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <span>✓</span>
+              <span><strong>Zero modifiche dichiarazione:</strong> Continua a dichiarare normalmente; per dubbi usa <strong>🧾 declaration-help</strong>.</span>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <span>✓</span>
+              <span><strong>Ritardi ≠ Sequestri:</strong> I pacchi fermi sono dovuti alla congestione d&apos;avvio e al traffico natalizio.</span>
+            </div>
           </div>
         </div>
 
@@ -332,6 +380,24 @@ export default function DoganaPage() {
               }}
             >
               💡 <strong>Regola aurea di dichiarazione per l&apos;Italia:</strong> Per le linee triangolate Tax-Free (DHL Tariffless), continua a dichiarare un totale compreso tra <strong>16.00$ e 21.00$</strong> per l&apos;intero pacco, inserendo sempre decimali casuali (es. <em>18.42$</em> o <em>19.38$</em>) e 1-2 categorie generiche (es. <em>Casual clothes</em> o <em>Shoes</em>).
+            </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                padding: "16px 20px",
+                borderRadius: 14,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 12,
+              }}
+            >
+              <span style={{ fontSize: 20 }}>🧾</span>
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: "rgba(255,255,255,0.8)" }}>
+                <strong style={{ color: "#fff" }}>Canale Ufficiale Assistenza CSSBuy:</strong> Se hai dubbi sulla compilazione della dichiarazione o non sai quali categorie selezionare per il tuo pacco, puoi fare affidamento sulla sezione dedicata <strong>🧾 declaration-help</strong> all&apos;interno dell&apos;ecosistema di supporto CSSBuy per una verifica personalizzata.
+              </div>
             </div>
           </div>
         </div>

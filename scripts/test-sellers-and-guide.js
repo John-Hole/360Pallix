@@ -136,4 +136,39 @@ assert(pillsCode.includes('href: "/dogana"'), "PILLS must contain /dogana");
 assert(!pillsCode.includes('href: "/community"'), "PILLS must NOT contain /community (community is disabled)");
 console.log("  ✅ Hero Pills: tutti i 5 bubble puntano direttamente a pagine dedicate reali inclusa /dogana (community disabilitata).");
 
+// Test 11: Verify Customs Guide page content covers all user requirements
+const doganaSource = fs.readFileSync("app/dogana/page.tsx", "utf8");
+const requiredTerms = [
+  "2,00€",
+  "4,00€",
+  "Product Identification",
+  "PID",
+  "Tax-Free",
+  "Tariffless",
+  "declaration-help",
+  "sequestr",
+  "panic buying",
+  "corrieri postali",
+];
+for (const term of requiredTerms) {
+  assert(
+    doganaSource.toLowerCase().includes(term.toLowerCase()),
+    `app/dogana/page.tsx must cover term/concept: ${term}`
+  );
+}
+
+// Verify top navigation in key pages includes /dogana and does NOT include /community
+const navPages = [
+  "app/sellers/page.tsx",
+  "app/guide/page.tsx",
+  "app/coupon/page.tsx",
+  "app/spreadsheet/page.tsx",
+];
+for (const p of navPages) {
+  const content = fs.readFileSync(p, "utf8");
+  assert(content.includes('href="/dogana"'), `${p} top navigation must include /dogana`);
+  assert(!content.includes('href="/community"'), `${p} must NOT link to /community`);
+}
+console.log("  ✅ Guida Dogana UE & Navigazione: tutti i requisiti normativi, declaration-help e cross-nav verificati con successo.");
+
 console.log("🎉 TUTTI I TEST DELLA DIRECTORY E GUIDA SUPERATI CON SUCCESSO!");

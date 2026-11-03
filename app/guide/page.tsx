@@ -368,6 +368,45 @@ export default function GuidePage() {
                 </div>
               </div>
             </div>
+
+            <div
+              style={{
+                marginTop: 20,
+                padding: "16px 20px",
+                borderRadius: 16,
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 12,
+              }}
+            >
+              <div>
+                <div style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>
+                  ⚖️ Novità Dogana UE · 1 Novembre 2026
+                </div>
+                <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>
+                  Handling fee da 2€, codice PID e copertura 100% Tax-Free garantita da CSSBuy.
+                </div>
+              </div>
+              <Link
+                href="/dogana"
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  padding: "8px 16px",
+                  borderRadius: 999,
+                  background: "#fff",
+                  color: "#000",
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Scopri le Nuove Regole →
+              </Link>
+            </div>
           </div>
         </div>
 
