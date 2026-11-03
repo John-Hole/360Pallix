@@ -12,6 +12,7 @@ export default function ItemImage({ src, alt }: { src: string; alt: string }) {
     <img
       src={imgSrc}
       alt={alt}
+      referrerPolicy="no-referrer"
       onError={() => {
         if (imgSrc !== FALLBACK_SVG) {
           setImgSrc(FALLBACK_SVG);

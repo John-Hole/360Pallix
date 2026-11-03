@@ -86,6 +86,7 @@ export default function Home() {
                       alt={p.title}
                       loading="lazy"
                       draggable={false}
+                      referrerPolicy="no-referrer"
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src =
                           "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='370' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23666' font-size='14'%3EImmagine non disp.%3C/text%3E%3C/svg%3E";
