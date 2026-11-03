@@ -5,10 +5,11 @@ import { PRODUCTS, eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
 import { getTopVerifiedSellers, type SellerItem } from "@/lib/sellers";
 
 const PILLS = [
-  { label: "Spreadsheet", href: "/spreadsheet", x: "min(26vw, 380px)", y: "-24vh", d: "0s" },
-  { label: "Coupon", href: "/#coupon", x: "max(-30vw, -420px)", y: "-18vh", d: "-2s" },
-  { label: "Tutorial", href: "/#tutorial", x: "max(-26vw, -380px)", y: "20vh", d: "-4s" },
-  { label: "Best Seller", href: "/#best-seller", x: "min(30vw, 420px)", y: "18vh", d: "-1s" },
+  { label: "Spreadsheet", href: "/spreadsheet", x: "min(28vw, 400px)", y: "-22vh", d: "0s" },
+  { label: "Coupon", href: "/coupon", x: "max(-28vw, -400px)", y: "-22vh", d: "-2s" },
+  { label: "Tutorial", href: "/guide", x: "max(-26vw, -380px)", y: "20vh", d: "-4s" },
+  { label: "Best Seller", href: "/sellers", x: "min(26vw, 380px)", y: "20vh", d: "-1s" },
+  { label: "Community", href: "/community", x: "0px", y: "-30vh", d: "-3s" },
 ];
 
 const TUTORIAL_FAQS = [
@@ -92,21 +93,7 @@ export default function Home() {
               marginTop: "var(--py,0)",
             }}
           >
-            <Link
-              className="hero-pill"
-              href={p.href}
-              onClick={(e) => {
-                if (p.href.startsWith("/#")) {
-                  const targetId = p.href.slice(2);
-                  const el = document.getElementById(targetId);
-                  if (el) {
-                    e.preventDefault();
-                    el.scrollIntoView({ behavior: "smooth" });
-                    window.history.pushState(null, "", `#${targetId}`);
-                  }
-                }
-              }}
-            >
+            <Link className="hero-pill" href={p.href}>
               {p.label}
             </Link>
           </div>
@@ -418,15 +405,20 @@ export default function Home() {
       <section className="section" id="coupon">
         <div className="wrap">
           <div className="eyebrow reveal">Savings</div>
-          <h2 className="sec-title reveal">Coupon</h2>
-          <div className="tiles reveal">
+          <h2 className="sec-title reveal">Coupon & Sconti</h2>
+          <p className="sec-sub reveal" style={{ maxWidth: 640 }}>
+            Pacchetti coupon fino a 50$, sconti esclusivi sulle spedizioni Tax-Free e codici promozionali per i tuoi ordini.
+          </p>
+          <div className="tiles reveal" style={{ marginTop: 24 }}>
             <div className="tile glass">
-              <div className="eyebrow">Coming soon</div>
-              <h3>Stiamo completando la sezione.</h3>
-              <Link className="cta ghost" href="/#coupon" style={{ marginTop: 0 }}>
-                Apri i Coupon →
+              <div className="eyebrow">Promo attive</div>
+              <h3>Risparmia fino al 20% sulla spedizione</h3>
+              <p className="sec-sub" style={{ marginTop: 6, marginBottom: 20 }}>
+                Scopri tutti i coupon attivi e il bonus di benvenuto riservato ai nuovi utenti.
+              </p>
+              <Link className="cta" href="/coupon" style={{ marginTop: 0 }}>
+                Scopri tutti i Coupon →
               </Link>
-              <p className="sec-sub">In arrivo a breve.</p>
             </div>
           </div>
         </div>
@@ -435,9 +427,16 @@ export default function Home() {
       {/* COMMUNITY SECTION */}
       <section className="section" id="community">
         <div className="wrap">
-          <div className="eyebrow reveal">Community</div>
+          <div className="eyebrow reveal">Official hub</div>
           <h2 className="sec-title reveal">Community</h2>
-          <p className="sec-sub reveal">Il link alla community sarà disponibile a breve.</p>
+          <p className="sec-sub reveal" style={{ maxWidth: 640 }}>
+            Unisciti al canale Telegram e al server Discord di 360Pallix per Quality Check gratuiti, aggiornamenti sui drop e assistenza ordini.
+          </p>
+          <div className="reveal" style={{ marginTop: 24 }}>
+            <Link className="cta" href="/community">
+              Entra nella Community →
+            </Link>
+          </div>
         </div>
       </section>
 

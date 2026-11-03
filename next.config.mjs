@@ -4,6 +4,25 @@ const nextConfig = {
   experimental: {
     agentUpgrade: "security",
   },
+  async redirects() {
+    return [
+      {
+        source: "/tutorial",
+        destination: "/guide",
+        permanent: true,
+      },
+      {
+        source: "/best-seller",
+        destination: "/sellers",
+        permanent: true,
+      },
+      {
+        source: "/bestseller",
+        destination: "/sellers",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

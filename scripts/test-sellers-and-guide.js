@@ -44,10 +44,12 @@ const scarlett = data.sellers.find((s) => s.id === "scarlett");
 assert.strictEqual(scarlett.category, "Borse & Pelletteria", "Scarlett category must be 'Borse & Pelletteria'");
 console.log("  ✅ Seller chiave (YOLO, WWTOP, Husky, Goat Official, TopGoosey, Scarlett) presenti e categorie verificate.");
 
-// Test 5: Verify guide page and sellers page exist
+// Test 5: Verify guide, sellers, coupon, and community pages exist
 assert(fs.existsSync("app/guide/page.tsx"), "app/guide/page.tsx must exist");
 assert(fs.existsSync("app/sellers/page.tsx"), "app/sellers/page.tsx must exist");
-console.log("  ✅ Pagine dedicate /guide e /sellers presenti nel filesystem.");
+assert(fs.existsSync("app/coupon/page.tsx"), "app/coupon/page.tsx must exist");
+assert(fs.existsSync("app/community/page.tsx"), "app/community/page.tsx must exist");
+console.log("  ✅ Tutte le pagine dedicate (/guide, /sellers, /coupon, /community) sono presenti nel filesystem.");
 
 // Test 6: Verify Spreadsheet search matching logic against products.json
 const products = JSON.parse(fs.readFileSync("data/products.json", "utf8"));
@@ -101,6 +103,8 @@ const uiFiles = [
   "app/page.tsx",
   "app/sellers/page.tsx",
   "app/guide/page.tsx",
+  "app/coupon/page.tsx",
+  "app/community/page.tsx",
   "app/spreadsheet/page.tsx",
   "app/item/[id]/page.tsx",
   "app/admin/page.tsx",
@@ -115,5 +119,18 @@ for (const file of uiFiles) {
   }
 }
 console.log("  ✅ Restyling 100% monocromatico: nessun colore o classe verde residua trovata.");
+
+// Test 10: Verify Hero pills point directly to dedicated pages (no hash anchors)
+const homeSource = fs.readFileSync("app/page.tsx", "utf8");
+const pillsMatch = homeSource.match(/const PILLS = \[([\s\S]*?)\];/);
+assert(pillsMatch, "PILLS array must be defined in app/page.tsx");
+const pillsCode = pillsMatch[1];
+assert(!pillsCode.includes("/#"), "No hero pill should use hash anchor (/#), must go directly to pages");
+assert(pillsCode.includes('href: "/spreadsheet"'), "PILLS must contain /spreadsheet");
+assert(pillsCode.includes('href: "/coupon"'), "PILLS must contain /coupon");
+assert(pillsCode.includes('href: "/guide"'), "PILLS must contain /guide");
+assert(pillsCode.includes('href: "/sellers"'), "PILLS must contain /sellers");
+assert(pillsCode.includes('href: "/community"'), "PILLS must contain /community");
+console.log("  ✅ Hero Pills: tutti i 5 bubble puntano direttamente a pagine dedicate reali (nessun link a footer/sezioni interne).");
 
 console.log("🎉 TUTTI I TEST DELLA DIRECTORY E GUIDA SUPERATI CON SUCCESSO!");

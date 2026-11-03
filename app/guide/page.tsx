@@ -61,7 +61,7 @@ export default function GuidePage() {
           <Link href="/" className="back">
             ← Home
           </Link>
-          <div style={{ flex: 1, display: "flex", justifyContent: "center", gap: 10 }}>
+          <div style={{ flex: 1, display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
             <Link
               href="/spreadsheet"
               style={{
@@ -89,6 +89,34 @@ export default function GuidePage() {
               }}
             >
               Best Seller (130+)
+            </Link>
+            <Link
+              href="/coupon"
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "6px 14px",
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "#fff",
+              }}
+            >
+              Coupon & Sconti
+            </Link>
+            <Link
+              href="/community"
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "6px 14px",
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "#fff",
+              }}
+            >
+              Community
             </Link>
           </div>
         </div>
