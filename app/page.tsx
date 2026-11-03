@@ -9,7 +9,7 @@ const PILLS = [
   { label: "Coupon", href: "/coupon", x: "max(-28vw, -400px)", y: "-22vh", d: "-2s" },
   { label: "Tutorial", href: "/guide", x: "max(-26vw, -380px)", y: "20vh", d: "-4s" },
   { label: "Best Seller", href: "/sellers", x: "min(26vw, 380px)", y: "20vh", d: "-1s" },
-  { label: "Community", href: "/community", x: "0px", y: "-30vh", d: "-3s" },
+  { label: "Regole Dogana UE", href: "/dogana", x: "0px", y: "-30vh", d: "-3s" },
 ];
 
 const TUTORIAL_FAQS = [
@@ -424,17 +424,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* COMMUNITY SECTION */}
-      <section className="section" id="community">
+      {/* DOGANA SECTION */}
+      <section className="section" id="dogana">
         <div className="wrap">
-          <div className="eyebrow reveal">Official hub</div>
-          <h2 className="sec-title reveal">Community</h2>
+          <div className="eyebrow reveal">Normativa Doganale UE · 1 Novembre</div>
+          <h2 className="sec-title reveal">Regole Dogana UE</h2>
           <p className="sec-sub reveal" style={{ maxWidth: 640 }}>
-            Unisciti al canale Telegram e al server Discord di 360Pallix per Quality Check gratuiti, aggiornamenti sui drop e assistenza ordini.
+            Tutto ciò che devi sapere sulla nuova handling fee europea di 2€, codice identificativo PID e la copertura al 100% garantita da CSSBuy sulle linee triangolate Tax-Free.
           </p>
           <div className="reveal" style={{ marginTop: 24 }}>
-            <Link className="cta" href="/community">
-              Entra nella Community →
+            <Link className="cta" href="/dogana">
+              Leggi la Guida Doganale Completa →
             </Link>
           </div>
         </div>

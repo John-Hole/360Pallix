@@ -185,6 +185,9 @@ function SpreadsheetContent() {
             <Link href="/guide" className="sheet-nav-pill">
               📖 Guida
             </Link>
+            <Link href="/dogana" className="sheet-nav-pill">
+              ⚖️ Dogana UE
+            </Link>
           </div>
         </div>
         <div className="filters">

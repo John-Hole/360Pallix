@@ -115,7 +115,7 @@ export default function CouponPage() {
               Guida & Tutorial
             </Link>
             <Link
-              href="/community"
+              href="/dogana"
               style={{
                 fontSize: 12,
                 fontWeight: 600,
@@ -126,7 +126,7 @@ export default function CouponPage() {
                 color: "#fff",
               }}
             >
-              Community
+              Regole Dogana
             </Link>
           </div>
         </div>

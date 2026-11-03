@@ -44,12 +44,13 @@ const scarlett = data.sellers.find((s) => s.id === "scarlett");
 assert.strictEqual(scarlett.category, "Borse & Pelletteria", "Scarlett category must be 'Borse & Pelletteria'");
 console.log("  ✅ Seller chiave (YOLO, WWTOP, Husky, Goat Official, TopGoosey, Scarlett) presenti e categorie verificate.");
 
-// Test 5: Verify guide, sellers, coupon, and community pages exist
+// Test 5: Verify guide, sellers, coupon, community, and dogana pages exist
 assert(fs.existsSync("app/guide/page.tsx"), "app/guide/page.tsx must exist");
 assert(fs.existsSync("app/sellers/page.tsx"), "app/sellers/page.tsx must exist");
 assert(fs.existsSync("app/coupon/page.tsx"), "app/coupon/page.tsx must exist");
 assert(fs.existsSync("app/community/page.tsx"), "app/community/page.tsx must exist");
-console.log("  ✅ Tutte le pagine dedicate (/guide, /sellers, /coupon, /community) sono presenti nel filesystem.");
+assert(fs.existsSync("app/dogana/page.tsx"), "app/dogana/page.tsx must exist");
+console.log("  ✅ Tutte le pagine dedicate (/guide, /sellers, /coupon, /community, /dogana) sono presenti nel filesystem.");
 
 // Test 6: Verify Spreadsheet search matching logic against products.json
 const products = JSON.parse(fs.readFileSync("data/products.json", "utf8"));
@@ -105,6 +106,7 @@ const uiFiles = [
   "app/guide/page.tsx",
   "app/coupon/page.tsx",
   "app/community/page.tsx",
+  "app/dogana/page.tsx",
   "app/spreadsheet/page.tsx",
   "app/item/[id]/page.tsx",
   "app/admin/page.tsx",
@@ -130,7 +132,8 @@ assert(pillsCode.includes('href: "/spreadsheet"'), "PILLS must contain /spreadsh
 assert(pillsCode.includes('href: "/coupon"'), "PILLS must contain /coupon");
 assert(pillsCode.includes('href: "/guide"'), "PILLS must contain /guide");
 assert(pillsCode.includes('href: "/sellers"'), "PILLS must contain /sellers");
-assert(pillsCode.includes('href: "/community"'), "PILLS must contain /community");
-console.log("  ✅ Hero Pills: tutti i 5 bubble puntano direttamente a pagine dedicate reali (nessun link a footer/sezioni interne).");
+assert(pillsCode.includes('href: "/dogana"'), "PILLS must contain /dogana");
+assert(!pillsCode.includes('href: "/community"'), "PILLS must NOT contain /community (community is disabled)");
+console.log("  ✅ Hero Pills: tutti i 5 bubble puntano direttamente a pagine dedicate reali inclusa /dogana (community disabilitata).");
 
 console.log("🎉 TUTTI I TEST DELLA DIRECTORY E GUIDA SUPERATI CON SUCCESSO!");
