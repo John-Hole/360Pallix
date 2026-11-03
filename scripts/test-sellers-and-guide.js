@@ -93,13 +93,15 @@ const sellerCardActionsMatches = (sellersPageContent.match(/className="seller-bt
 assert.strictEqual(sellerCardActionsMatches, 1, "Only the brand header search button should use seller-btn-find, not seller cards");
 console.log("  ✅ Pulsante unico (Sito store ↗) nei box seller verificato con successo (Spreadsheet rimosso).");
 
-// Test 9: Verify no green hex colors in UI files
-const greenHexes = ["#22c55e", "#4ade80", "#86efac", "#16a34a", "#15803d"];
+// Test 9: Verify no green colors, classes or rgba values in UI files
+const greenHexes = ["#22c55e", "#4ade80", "#86efac", "#16a34a", "#15803d", "#10b981", "#059669", "#34d399"];
+const greenTokens = ["cta-green", "badge-green", "140, 255, 210", "16, 185, 129"];
 const uiFiles = [
   "app/globals.css",
   "app/page.tsx",
   "app/sellers/page.tsx",
   "app/guide/page.tsx",
+  "app/spreadsheet/page.tsx",
   "app/item/[id]/page.tsx",
   "app/admin/page.tsx",
 ];
@@ -108,7 +110,10 @@ for (const file of uiFiles) {
   for (const hex of greenHexes) {
     assert(!content.toLowerCase().includes(hex), `File ${file} contains green color ${hex}`);
   }
+  for (const token of greenTokens) {
+    assert(!content.includes(token), `File ${file} contains forbidden green token: ${token}`);
+  }
 }
-console.log("  ✅ Restyling 100% monocromatico: nessun colore verde residuo trovato.");
+console.log("  ✅ Restyling 100% monocromatico: nessun colore o classe verde residua trovata.");
 
 console.log("🎉 TUTTI I TEST DELLA DIRECTORY E GUIDA SUPERATI CON SUCCESSO!");

@@ -179,7 +179,7 @@ export default function GuidePage() {
               dell’articolo più l'eventuale spedizione interna dal venditore al magazzino dell'agent in Cina (in genere circa 10¥, pari a circa 1,30€).
             </p>
 
-            <div className="pro-tip-box blue" style={{ marginTop: 18 }}>
+            <div className="pro-tip-box" style={{ marginTop: 18 }}>
               <span style={{ fontSize: 18 }}>📏</span>
               <div>
                 <div className="pro-tip-title">Attenzione alle Taglie (Size Chart)</div>

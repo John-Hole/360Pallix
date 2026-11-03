@@ -481,7 +481,7 @@ export default function AdminPage() {
           inset: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(60% 40% at 50% 0%, rgba(185, 130, 255, 0.08), transparent 70%), radial-gradient(40% 30% at 80% 90%, rgba(140, 255, 210, 0.05), transparent 70%)",
+            "radial-gradient(60% 40% at 50% 0%, rgba(255, 255, 255, 0.05), transparent 70%), radial-gradient(40% 30% at 80% 90%, rgba(255, 255, 255, 0.03), transparent 70%)",
           zIndex: 0,
         }}
       />
@@ -1866,10 +1866,10 @@ export default function AdminPage() {
                 gap: 12,
                 background:
                   t.type === "success"
-                    ? "rgba(16, 185, 129, 0.95)"
+                    ? "rgba(24, 24, 27, 0.96)"
                     : t.type === "error"
                     ? "rgba(239, 68, 68, 0.95)"
-                    : "rgba(59, 130, 246, 0.95)",
+                    : "rgba(39, 39, 42, 0.95)",
                 color: "#fff",
                 boxShadow: "0 14px 40px rgba(0,0,0,0.6)",
                 border: "1px solid rgba(255,255,255,0.2)",
@@ -1877,7 +1877,7 @@ export default function AdminPage() {
               }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span>{t.type === "success" ? "✅" : t.type === "error" ? "⚠️" : "ℹ️"}</span>
+                <span>{t.type === "success" ? "✓" : t.type === "error" ? "⚠️" : "ℹ️"}</span>
                 <span>{t.message}</span>
               </div>
               <button
