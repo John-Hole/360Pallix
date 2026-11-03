@@ -7,6 +7,7 @@ const FALLBACK_SVG =
 
 export default function ItemImage({ src, alt }: { src: string; alt: string }) {
   const [imgSrc, setImgSrc] = useState(src || FALLBACK_SVG);
+  const [triedProxy, setTriedProxy] = useState(false);
 
   return (
     <img
@@ -14,7 +15,10 @@ export default function ItemImage({ src, alt }: { src: string; alt: string }) {
       alt={alt}
       referrerPolicy="no-referrer"
       onError={() => {
-        if (imgSrc !== FALLBACK_SVG) {
+        if (!triedProxy && src && src.startsWith("http")) {
+          setTriedProxy(true);
+          setImgSrc(`/api/image-proxy?url=${encodeURIComponent(src)}`);
+        } else if (imgSrc !== FALLBACK_SVG) {
           setImgSrc(FALLBACK_SVG);
         }
       }}
