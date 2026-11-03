@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PRODUCTS, eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
 
 const uniq = (k: keyof Product, items: Product[]) =>
@@ -8,19 +9,32 @@ const uniq = (k: keyof Product, items: Product[]) =>
 
 const PER_PAGE = [10, 20, 50, 100, 250, 500, 1000, 2500, 5000, 10000];
 
-export default function Spreadsheet() {
+function SpreadsheetContent() {
+  const searchParams = useSearchParams();
   const [allProducts, setAllProducts] = useState<Product[]>(PRODUCTS);
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState(() => searchParams.get("q") || "");
   const [order, setOrder] = useState("");
-  const [seller, setSeller] = useState("");
-  const [brand, setBrand] = useState("");
-  const [cat, setCat] = useState("");
+  const [seller, setSeller] = useState(() => searchParams.get("seller") || "");
+  const [brand, setBrand] = useState(() => searchParams.get("brand") || "");
+  const [cat, setCat] = useState(() => searchParams.get("cat") || "");
   const [favs, setFavs] = useState<string[]>([]);
   const [onlyFavs, setOnlyFavs] = useState(false);
   const [legal, setLegal] = useState(false);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(50);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+
+  // Sync state if query params change
+  useEffect(() => {
+    const urlQ = searchParams.get("q");
+    if (urlQ !== null) setQ(urlQ);
+    const urlSeller = searchParams.get("seller");
+    if (urlSeller !== null) setSeller(urlSeller);
+    const urlBrand = searchParams.get("brand");
+    if (urlBrand !== null) setBrand(urlBrand);
+    const urlCat = searchParams.get("cat");
+    if (urlCat !== null) setCat(urlCat);
+  }, [searchParams]);
 
   useEffect(() => {
     try {
@@ -401,5 +415,23 @@ export default function Spreadsheet() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function Spreadsheet() {
+  return (
+    <Suspense
+      fallback={
+        <div style={{ minHeight: "100dvh", display: "grid", placeItems: "center", background: "#000", color: "#fff" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 13, letterSpacing: "0.2em", textTransform: "uppercase", opacity: 0.6 }}>
+              Caricamento Spreadsheet...
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <SpreadsheetContent />
+    </Suspense>
   );
 }

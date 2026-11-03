@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PRODUCTS, eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
+import { getTopVerifiedSellers, type SellerItem } from "@/lib/sellers";
 
 const PILLS = [
   { label: "Spreadsheet", href: "/spreadsheet", x: "min(26vw, 380px)", y: "-24vh", d: "0s" },
@@ -10,11 +11,20 @@ const PILLS = [
   { label: "Best Seller", href: "/#best-seller", x: "min(30vw, 420px)", y: "18vh", d: "-1s" },
 ];
 
-const Plane = () => (
-  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden>
-    <path d="M21 3 3 10.5l6.5 2.5L12 20l3-5.5L21 3Z" />
-  </svg>
-);
+const TUTORIAL_FAQS = [
+  {
+    q: "Come scelgo la taglia corretta per abbigliamento e sneakers?",
+    a: "Le taglie cinesi vestono spesso 1 o 2 misure in meno rispetto a quelle europee (EU/IT). Controlla sempre la 'Size Chart' in centimetri presente nell'annuncio del venditore (petto, spalle e lunghezza totale). Per le scarpe, fai sempre riferimento ai centimetri (CM) della soletta interna.",
+  },
+  {
+    q: "Come compilo la dichiarazione doganale per non pagare tasse?",
+    a: "Per le linee triangolate Tax-Free / Tariffless (come DHL Tariffless) verso l'Italia, dichiara sempre un valore totale compreso tra 16.00$ e 21.00$ con decimali casuali (es. 18.42$). La merce viene sdoganata nell'UE senza alcun dazio o spesa aggiuntiva alla consegna.",
+  },
+  {
+    q: "Conviene aggiungere l'assicurazione alla spedizione?",
+    a: "Sì, assolutamente consigliata. L'assicurazione su CSSBuy costa solo circa il 3% del valore del pacco e ti protegge al 100% rimborsando sia il costo degli articoli che le spese di spedizione in caso di smarrimento o sequestro.",
+  },
+];
 
 function useReveal() {
   useEffect(() => {
@@ -31,6 +41,8 @@ export default function Home() {
   const rail = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   const [productList, setProductList] = useState<Product[]>(PRODUCTS);
+  const [topSellers] = useState<SellerItem[]>(() => getTopVerifiedSellers(6));
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
   useReveal();
 
   useEffect(() => {
@@ -60,22 +72,43 @@ export default function Home() {
 
   const scroll = (dir: number) => rail.current?.scrollBy({ left: dir * 300, behavior: "smooth" });
 
+  const toggleFaq = (idx: number) => {
+    setOpenFaq(openFaq === idx ? null : idx);
+  };
+
   return (
     <main>
       <section className="hero" ref={heroRef}>
         <div className="hero-wordmark">360Pallix</div>
         {PILLS.map((p) => (
-          <div key={p.label} className="orbit orbit-pos" style={{ ["--x" as string]: p.x, ["--y" as string]: p.y, ["--d" as string]: p.d, marginLeft: "var(--px,0)", marginTop: "var(--py,0)" }}>
-            <Link className="hero-pill" href={p.href}>{p.label}</Link>
+          <div
+            key={p.label}
+            className="orbit orbit-pos"
+            style={{
+              ["--x" as string]: p.x,
+              ["--y" as string]: p.y,
+              ["--d" as string]: p.d,
+              marginLeft: "var(--px,0)",
+              marginTop: "var(--py,0)",
+            }}
+          >
+            <Link className="hero-pill" href={p.href}>
+              {p.label}
+            </Link>
           </div>
         ))}
         <div className="scrollHint">Scroll ↓</div>
       </section>
 
+      {/* SPREADSHEET SECTION */}
       <section className="section" id="spreadsheet">
         <div className="wrap">
           <h2 className="sec-title reveal">Spreadsheet</h2>
-          <div className="reveal"><Link className="cta" href="/spreadsheet">Entra nella Spreadsheet →</Link></div>
+          <div className="reveal">
+            <Link className="cta" href="/spreadsheet">
+              Entra nella Spreadsheet →
+            </Link>
+          </div>
           <div className="rail reveal">
             <div className="rail-scroll" ref={rail}>
               <div className="rail-track">
@@ -101,8 +134,22 @@ export default function Home() {
                     <div className="rail-meta">
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                         <span className="badge">WEEKLY BEST</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", background: "rgba(0,0,0,0.5)", padding: "2px 8px", borderRadius: 999, border: "1px solid rgba(255,255,255,0.15)", backdropFilter: "blur(4px)" }}>
-                          {eur(p.price)} <span style={{ fontSize: 9.5, color: "#86efac", opacity: 0.85, fontWeight: 500 }}>{rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}</span>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 700,
+                            color: "#4ade80",
+                            background: "rgba(0,0,0,0.5)",
+                            padding: "2px 8px",
+                            borderRadius: 999,
+                            border: "1px solid rgba(255,255,255,0.15)",
+                            backdropFilter: "blur(4px)",
+                          }}
+                        >
+                          {eur(p.price)}{" "}
+                          <span style={{ fontSize: 9.5, color: "#86efac", opacity: 0.85, fontWeight: 500 }}>
+                            {rmb(p.priceRmb ?? p.price * RMB_TO_EUR)}
+                          </span>
                         </span>
                       </div>
                       <div className="rail-title">{p.title}</div>
@@ -115,29 +162,251 @@ export default function Home() {
               </div>
             </div>
             <div className="rail-nav">
-              <button className="iconbtn" aria-label="Scorri a sinistra" onClick={() => scroll(-1)}>‹</button>
-              <button className="iconbtn" aria-label="Scorri a destra" onClick={() => scroll(1)}>›</button>
+              <button className="iconbtn" aria-label="Scorri a sinistra" onClick={() => scroll(-1)}>
+                ‹
+              </button>
+              <button className="iconbtn" aria-label="Scorri a destra" onClick={() => scroll(1)}>
+                ›
+              </button>
             </div>
           </div>
         </div>
       </section>
 
+      {/* BEST SELLER SECTION */}
       <section className="section" id="best-seller">
         <div className="wrap">
-          <div className="eyebrow reveal">Best sellers</div>
-          <h2 className="sec-title reveal">Sellers</h2>
-          <div className="reveal"><Link className="cta ghost" href="/spreadsheet">Entra nella sezione →</Link></div>
+          <div className="eyebrow reveal">Verified stores</div>
+          <h2 className="sec-title reveal">Best Seller</h2>
+          <p className="sec-sub reveal" style={{ maxWidth: 620 }}>
+            Una selezione curata dei negozi e venditori indipendenti più affidabili su Yupoo, Weidian e Taobao, verificati dalla community.
+          </p>
+
+          <div className="sellers-grid reveal" style={{ marginTop: 32 }}>
+            {topSellers.map((s) => (
+              <div key={s.id} className="seller-dir-card">
+                <div className="seller-card-top">
+                  <img
+                    src={s.cover}
+                    alt={s.name}
+                    className="seller-card-img"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      if (!target.dataset.triedProxy && s.cover?.startsWith("http")) {
+                        target.dataset.triedProxy = "true";
+                        target.src = `/api/image-proxy?url=${encodeURIComponent(s.cover)}`;
+                      } else {
+                        target.src =
+                          "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='225' fill='none'%3E%3Crect width='100%25' height='100%25' fill='%23111'/%3E%3C/svg%3E";
+                      }
+                    }}
+                  />
+                  <div className="seller-card-badges">
+                    <span className="badge-green">✓ VERIFIED</span>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "3px 8px",
+                        borderRadius: 6,
+                        background: "rgba(0,0,0,0.75)",
+                        border: "1px solid rgba(255,255,255,0.18)",
+                        backdropFilter: "blur(6px)",
+                        color: "#fff",
+                      }}
+                    >
+                      {s.platform}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="seller-card-body">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                    <h3 className="seller-card-name">{s.name}</h3>
+                    <span
+                      style={{
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        padding: "2px 8px",
+                        borderRadius: 999,
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        color: "rgba(255,255,255,0.7)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {s.category}
+                    </span>
+                  </div>
+
+                  <div className="seller-card-spec">
+                    <span>★</span>
+                    <span>{s.specialty}</span>
+                  </div>
+
+                  <p className="seller-card-desc">{s.description}</p>
+
+                  <div className="seller-card-actions">
+                    {s.officialUrl ? (
+                      <a
+                        href={s.officialUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="seller-btn-store"
+                      >
+                        Sito store ↗
+                      </a>
+                    ) : (
+                      <span className="seller-btn-store" style={{ opacity: 0.4 }}>
+                        Store n.d.
+                      </span>
+                    )}
+                    <Link
+                      href={`/spreadsheet?q=${encodeURIComponent(s.spreadsheetQuery || s.name)}`}
+                      className="seller-btn-find"
+                    >
+                      Spreadsheet →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="reveal" style={{ marginTop: 32, textAlign: "center" }}>
+            <Link className="cta-green" href="/sellers">
+              Esplora tutti i Seller (130+) →
+            </Link>
+          </div>
         </div>
       </section>
 
+      {/* TUTORIAL / COME COMPRARE SECTION */}
       <section className="section" id="tutorial">
         <div className="wrap">
-          <div className="eyebrow reveal">Guide</div>
-          <h2 className="sec-title reveal">Tutorial</h2>
-          <div className="reveal"><Link className="cta ghost" href="/#tutorial">Vai ai Tutorial →</Link></div>
+          <div className="eyebrow reveal">Guida all&apos;acquisto</div>
+          <h2 className="sec-title reveal">Come Comprare con CSSBuy</h2>
+          <p className="sec-sub reveal" style={{ maxWidth: 640 }}>
+            Segui i 4 semplici passaggi per effettuare il tuo ordine in totale sicurezza, con foto di controllo qualità e spedizione senza dogana.
+          </p>
+
+          {/* 4 Steps Grid */}
+          <div className="steps-grid steps-grid-4 reveal">
+            {/* Step 1 */}
+            <div className="step-card">
+              <div className="step-card-header">
+                <div className="step-num">1</div>
+                <span className="step-tag">Fase 1</span>
+              </div>
+              <h3 className="step-title">Scegli il Prodotto</h3>
+              <p className="step-desc">
+                Cerca l&apos;articolo nello Spreadsheet di 360Pallix o seleziona uno dei 130+ Best Seller verificati su Yupoo/Weidian.
+              </p>
+              <div className="step-subnote">
+                <span>✓</span> Link diretti e store verificati
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="step-card">
+              <div className="step-card-header">
+                <div className="step-num">2</div>
+                <span className="step-tag">Fase 2</span>
+              </div>
+              <h3 className="step-title">Incolla su CSSBuy</h3>
+              <p className="step-desc">
+                Incolla il link nella barra dell&apos;agent, seleziona taglia/colore e completa il 1° pagamento (costo merce + spedizione interna).
+              </p>
+              <div className="step-subnote">
+                <span>✓</span> Pagamento sicuro con PayPal o carta
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="step-card">
+              <div className="step-card-header">
+                <div className="step-num">3</div>
+                <span className="step-tag">Fase 3</span>
+              </div>
+              <h3 className="step-title">Ricevi Foto QC</h3>
+              <p className="step-desc">
+                In 2-4 giorni il prodotto arriva al magazzino. Ricevi foto ad alta risoluzione: approvi (GL) o chiedi il reso gratuito (RL).
+              </p>
+              <div className="step-subnote">
+                <span>✓</span> Controllo qualità garantito
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="step-card">
+              <div className="step-card-header">
+                <div className="step-num">4</div>
+                <span className="step-tag">Fase 4</span>
+              </div>
+              <h3 className="step-title">Spedizione Tax-Free</h3>
+              <p className="step-desc">
+                Raggruppa gli articoli in un Haul per risparmiare fino al 40%. Spedisci con linee triangolate Tax-Free esenti da dogana.
+              </p>
+              <div className="step-subnote">
+                <span>✓</span> Zero tasse doganali alla consegna
+              </div>
+            </div>
+          </div>
+
+          {/* FAQ Accordion */}
+          <div className="faq-wrap reveal">
+            <h3 className="faq-title" style={{ fontSize: 22 }}>
+              Domande Frequenti (FAQ)
+            </h3>
+            <p className="faq-sub">I consigli fondamentali per ordinare senza pensieri</p>
+
+            <div className="faq-list">
+              {TUTORIAL_FAQS.map((item, idx) => {
+                const isOpen = openFaq === idx;
+                return (
+                  <div key={idx} className={`faq-item ${isOpen ? "open" : ""}`}>
+                    <button
+                      type="button"
+                      className="faq-btn"
+                      onClick={() => toggleFaq(idx)}
+                      aria-expanded={isOpen}
+                    >
+                      <span>{item.q}</span>
+                      <svg
+                        className="faq-chevron"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </button>
+                    {isOpen && (
+                      <div className="faq-answer">
+                        <p>{item.a}</p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="reveal" style={{ marginTop: 32, textAlign: "center" }}>
+            <Link className="cta-green" href="/guide">
+              Leggi la Guida Completa (Step by Step) →
+            </Link>
+          </div>
         </div>
       </section>
 
+      {/* COUPON SECTION */}
       <section className="section" id="coupon">
         <div className="wrap">
           <div className="eyebrow reveal">Savings</div>
@@ -146,13 +415,16 @@ export default function Home() {
             <div className="tile glass">
               <div className="eyebrow">Coming soon</div>
               <h3>Stiamo completando la sezione.</h3>
-              <Link className="cta ghost" href="/#coupon" style={{ marginTop: 0 }}>Apri i Coupon →</Link>
+              <Link className="cta ghost" href="/#coupon" style={{ marginTop: 0 }}>
+                Apri i Coupon →
+              </Link>
               <p className="sec-sub">In arrivo a breve.</p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* COMMUNITY SECTION */}
       <section className="section" id="community">
         <div className="wrap">
           <div className="eyebrow reveal">Community</div>
@@ -165,5 +437,3 @@ export default function Home() {
     </main>
   );
 }
-
-
