@@ -145,7 +145,6 @@ const requiredTerms = [
   "PID",
   "Tax-Free",
   "Tariffless",
-  "declaration-help",
   "sequestr",
   "panic buying",
   "corrieri postali",
@@ -155,6 +154,20 @@ for (const term of requiredTerms) {
     doganaSource.toLowerCase().includes(term.toLowerCase()),
     `app/dogana/page.tsx must cover term/concept: ${term}`
   );
+}
+// Ensure declaration-help (Discord specific) is completely removed from app/dogana/page.tsx
+assert(!doganaSource.includes("declaration-help"), "app/dogana/page.tsx must NOT contain declaration-help");
+
+// Verify symmetrical grid centering class is used in all top navigation bars
+const gridNavPages = [
+  "app/dogana/page.tsx",
+  "app/sellers/page.tsx",
+  "app/guide/page.tsx",
+  "app/coupon/page.tsx",
+];
+for (const p of gridNavPages) {
+  const content = fs.readFileSync(p, "utf8");
+  assert(content.includes("sheet-nav-grid"), `${p} must use sheet-nav-grid for mathematical centering`);
 }
 
 // Verify top navigation in key pages includes /dogana and does NOT include /community
@@ -169,6 +182,6 @@ for (const p of navPages) {
   assert(content.includes('href="/dogana"'), `${p} top navigation must include /dogana`);
   assert(!content.includes('href="/community"'), `${p} must NOT link to /community`);
 }
-console.log("  ✅ Guida Dogana UE & Navigazione: tutti i requisiti normativi, declaration-help e cross-nav verificati con successo.");
+console.log("  ✅ Guida Dogana UE & Navigazione: requisiti normativi, centratura perfetta sheet-nav-grid e assenza declaration-help verificati con successo.");
 
 console.log("🎉 TUTTI I TEST DELLA DIRECTORY E GUIDA SUPERATI CON SUCCESSO!");

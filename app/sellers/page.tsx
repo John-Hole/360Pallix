@@ -67,13 +67,15 @@ export default function SellersPage() {
 
   return (
     <main style={{ minHeight: "100dvh", background: "#000", color: "#fff", paddingBottom: 80 }}>
-      {/* Top bar */}
+      {/* Top bar (100% mathematically centered) */}
       <div className="sheet-bar">
-        <div className="sheet-row1">
-          <Link href="/" className="back">
-            ← Home
-          </Link>
-          <div style={{ flex: 1, display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+        <div className="sheet-nav-grid">
+          <div className="sheet-nav-left">
+            <Link href="/" className="back">
+              ← Home
+            </Link>
+          </div>
+          <div className="sheet-nav-center">
             <Link
               href="/spreadsheet"
               style={{
@@ -131,6 +133,7 @@ export default function SellersPage() {
               Regole Dogana
             </Link>
           </div>
+          <div className="sheet-nav-right" aria-hidden="true" />
         </div>
       </div>
 

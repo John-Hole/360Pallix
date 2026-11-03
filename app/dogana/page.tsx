@@ -21,8 +21,8 @@ const DOGANA_FAQS: FaqItem[] = [
     a: "No. CSSBuy adegua automaticamente tutti i requisiti tecnici previsti dalle nuove regole europee sul Product Identification (PID). Puoi continuare a dichiarare il tuo pacco esattamente come facevi prima, inserendo 1 o 2 righe descrittive standard con importo compreso tra 16.00$ e 21.00$ e decimali casuali (es. 18.73$).",
   },
   {
-    q: "Dove posso chiedere aiuto se ho dubbi sulla dichiarazione del mio pacco?",
-    a: "Puoi utilizzare la sezione dedicata 🧾 declaration-help su CSSBuy. Il supporto specializzato è a tua disposizione per consigliarti le categorie merceologiche e i valori ottimali da inserire.",
+    q: "Come devo compilare la dichiarazione doganale del mio pacco?",
+    a: "Continua a compilare la dichiarazione esattamente come hai sempre fatto: seleziona 1 o 2 righe merceologiche standard (es. t-shirt o scarpe) e inserisci un valore complessivo compreso tra 16.00$ e 21.00$ con decimali casuali (es. 18.73$). CSSBuy applica automaticamente tutti i parametri di conformità richiesti per il transito doganale europeo.",
   },
   {
     q: "Quanto può incidere al massimo la nuova tassa di 2€?",
@@ -59,13 +59,15 @@ export default function DoganaPage() {
 
   return (
     <main style={{ minHeight: "100dvh", background: "#000", color: "#fff", paddingBottom: 80 }}>
-      {/* Top bar navigation */}
+      {/* Top bar navigation (100% mathematically centered) */}
       <div className="sheet-bar">
-        <div className="sheet-row1">
-          <Link href="/" className="back">
-            ← Home
-          </Link>
-          <div style={{ flex: 1, display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+        <div className="sheet-nav-grid">
+          <div className="sheet-nav-left">
+            <Link href="/" className="back">
+              ← Home
+            </Link>
+          </div>
+          <div className="sheet-nav-center">
             <Link
               href="/spreadsheet"
               style={{
@@ -123,13 +125,14 @@ export default function DoganaPage() {
               Coupon & Sconti
             </Link>
           </div>
+          <div className="sheet-nav-right" aria-hidden="true" />
         </div>
       </div>
 
       <div className="wrap" style={{ maxWidth: 1040, padding: "40px 20px 0" }}>
         {/* Header Section */}
         <div className="dir-header" style={{ marginTop: 20 }}>
-          <div style={{ display: "inline-flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
             <span className="badge-verified">NORMATIVA DOGANALE UE · 1 NOVEMBRE 2026</span>
             <span
               style={{
@@ -203,7 +206,7 @@ export default function DoganaPage() {
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <span>✓</span>
-              <span><strong>Zero modifiche dichiarazione:</strong> Continua a dichiarare normalmente; per dubbi usa <strong>🧾 declaration-help</strong>.</span>
+              <span><strong>Zero modifiche dichiarazione:</strong> Continua a dichiarare normalmente tra 16$ e 21$ come hai sempre fatto; CSSBuy applica automaticamente i parametri di conformità.</span>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
               <span>✓</span>
@@ -394,9 +397,9 @@ export default function DoganaPage() {
                 gap: 12,
               }}
             >
-              <span style={{ fontSize: 20 }}>🧾</span>
+              <span style={{ fontSize: 20 }}>🛡️</span>
               <div style={{ fontSize: 13, lineHeight: 1.6, color: "rgba(255,255,255,0.8)" }}>
-                <strong style={{ color: "#fff" }}>Canale Ufficiale Assistenza CSSBuy:</strong> Se hai dubbi sulla compilazione della dichiarazione o non sai quali categorie selezionare per il tuo pacco, puoi fare affidamento sulla sezione dedicata <strong>🧾 declaration-help</strong> all&apos;interno dell&apos;ecosistema di supporto CSSBuy per una verifica personalizzata.
+                <strong style={{ color: "#fff" }}>Garanzia di Conformità:</strong> CSSBuy applica automaticamente i protocolli di conformità richiesti dalle autorità doganali europee (inclusi i codici identificativi di prodotto PID). Non è richiesta alcuna azione manuale complessa da parte tua: puoi ordinare e spedire con la consueta semplicità.
               </div>
             </div>
           </div>
