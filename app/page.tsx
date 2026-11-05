@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PRODUCTS, eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
 import { getTopVerifiedSellers, type SellerItem } from "@/lib/sellers";
+import { TikTokIcon } from "@/components/TikTokIcon";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const PILLS = [
   { label: "Spreadsheet", href: "/spreadsheet", x: "min(30vw, 380px)", y: "-18vh", d: "0s" },
@@ -10,6 +12,7 @@ const PILLS = [
   { label: "Tutorial", href: "/guide", x: "max(-26vw, -360px)", y: "21vh", d: "-4s" },
   { label: "Best Seller", href: "/sellers", x: "min(26vw, 360px)", y: "21vh", d: "-1s" },
   { label: "Regole Dogana UE", href: "/dogana", x: "0px", y: "-31vh", d: "-3s" },
+  { label: "TikTok @360pallix", href: "https://www.tiktok.com/@360pallix", x: "0px", y: "32vh", d: "-5s", external: true },
 ];
 
 const TUTORIAL_FAQS = [
@@ -79,6 +82,19 @@ export default function Home() {
 
   return (
     <main>
+      <header className="topbar">
+        <a
+          href="https://www.tiktok.com/@360pallix"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="sheet-social-pill"
+          title="Segui @360pallix su TikTok"
+        >
+          <TikTokIcon size={14} />
+          <span>TikTok @360pallix</span>
+        </a>
+      </header>
+
       <section className="hero" ref={heroRef}>
         <div className="hero-wordmark">360Pallix</div>
         {PILLS.map((p) => (
@@ -93,9 +109,23 @@ export default function Home() {
               marginTop: "var(--py,0)",
             }}
           >
-            <Link className="hero-pill" href={p.href}>
-              {p.label}
-            </Link>
+            {p.external ? (
+              <a
+                className="hero-pill"
+                href={p.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
+                title="Apri profilo TikTok @360pallix (nuova scheda)"
+              >
+                <TikTokIcon size={16} />
+                <span>{p.label}</span>
+              </a>
+            ) : (
+              <Link className="hero-pill" href={p.href}>
+                {p.label}
+              </Link>
+            )}
           </div>
         ))}
         <div className="scrollHint">Scroll ↓</div>
@@ -440,7 +470,89 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="foot">© {new Date().getFullYear()} 360Pallix · {eur(0).slice(0, 1)} sample catalog</div>
+      {/* TIKTOK SECTION */}
+      <section className="section" id="tiktok">
+        <div className="wrap">
+          <div className="eyebrow reveal">Social Ufficiale · @360pallix</div>
+          <h2 className="sec-title reveal">Seguici su TikTok</h2>
+          <p className="sec-sub reveal" style={{ maxWidth: 640 }}>
+            Video recensioni, unboxing reali dei pacchi, confronti qualità tra le migliori batch di Yupoo/Weidian e tutorial rapidi per ordinare con CSSBuy senza sorprese.
+          </p>
+
+          <div className="reveal" style={{ marginTop: 32 }}>
+            <div
+              className="glass"
+              style={{
+                borderRadius: 28,
+                padding: "clamp(24px, 5vw, 36px)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 20,
+                maxWidth: 760,
+                border: "1px solid rgba(255, 255, 255, 0.12)",
+                background: "radial-gradient(80% 80% at 20% 0%, rgba(255, 255, 255, 0.07), rgba(0,0,0,0.45))",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: "50%",
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      display: "grid",
+                      placeItems: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <TikTokIcon size={24} />
+                  </div>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>360Pallix</h3>
+                      <span className="badge-verified">✓ UFFICIALE</span>
+                    </div>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", marginTop: 2 }}>
+                      @360pallix
+                    </div>
+                  </div>
+                </div>
+
+                <a
+                  href="https://www.tiktok.com/@360pallix"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cta"
+                  style={{ marginTop: 0, height: 44, padding: "0 22px", fontSize: 13 }}
+                  title="Apri profilo TikTok @360pallix (nuova scheda)"
+                >
+                  Segui su TikTok ↗
+                </a>
+              </div>
+
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: "rgba(255,255,255,0.75)" }}>
+                Scopri le clip esclusive prima delle spedizioni, i controlli qualità passo-passo sui prodotti più richiesti e le novità sulle linee triangolate Tax-Free.
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12, paddingTop: 6 }}>
+                <div style={{ padding: "12px 14px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 12.5, color: "rgba(255,255,255,0.85)" }}>
+                  🎬 <b>Unboxing & Haul</b> video completi
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 12.5, color: "rgba(255,255,255,0.85)" }}>
+                  🔍 <b>QC & Batch</b> analisi ravvicinate
+                </div>
+                <div style={{ padding: "12px 14px", borderRadius: 14, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", fontSize: 12.5, color: "rgba(255,255,255,0.85)" }}>
+                  ⚡ <b>Tutorial rapidi</b> su CSSBuy & sconti
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <SiteFooter />
     </main>
   );
 }

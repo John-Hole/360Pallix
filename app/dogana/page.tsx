@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import { TikTokIcon } from "@/components/TikTokIcon";
+import { SiteFooter } from "@/components/SiteFooter";
 
 interface FaqItem {
   q: string;
@@ -125,7 +127,18 @@ export default function DoganaPage() {
               Coupon & Sconti
             </Link>
           </div>
-          <div className="sheet-nav-right" aria-hidden="true" />
+          <div className="sheet-nav-right">
+            <a
+              href="https://www.tiktok.com/@360pallix"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sheet-social-pill"
+              title="Segui @360pallix su TikTok"
+            >
+              <TikTokIcon size={13} />
+              <span>TikTok @360pallix</span>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -647,12 +660,9 @@ export default function DoganaPage() {
             </Link>
           </div>
         </div>
-
-        {/* Footer info */}
-        <div className="foot" style={{ marginTop: 40 }}>
-          © {new Date().getFullYear()} 360Pallix · Informativa Normativa Doganale UE 1 Novembre 2026
-        </div>
       </div>
+
+      <SiteFooter subtitle="Informativa Normativa Doganale UE 1 Novembre 2026." />
     </main>
   );
 }

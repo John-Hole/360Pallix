@@ -4,6 +4,8 @@ import { PRODUCTS, eur, rmb, RMB_TO_EUR } from "@/lib/products";
 import { getProductById } from "@/lib/product-store";
 import { getProductDoppelfitUrl } from "@/lib/convert";
 import ItemImage from "./ItemImage";
+import { TikTokIcon } from "@/components/TikTokIcon";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export const dynamicParams = true;
 export const revalidate = 0;
@@ -21,7 +23,21 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
 
   return (
     <main className="item">
-      <Link href="/spreadsheet" className="back">← Spreadsheet</Link>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <Link href="/spreadsheet" className="back">
+          ← Spreadsheet
+        </Link>
+        <a
+          href="https://www.tiktok.com/@360pallix"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="sheet-social-pill"
+          title="Segui @360pallix su TikTok"
+        >
+          <TikTokIcon size={13} />
+          <span>TikTok @360pallix</span>
+        </a>
+      </div>
       <div className="item-grid">
         <div className="item-img">
           <ItemImage src={p.image} alt={p.title} />
@@ -92,6 +108,8 @@ export default async function Item({ params }: { params: Promise<{ id: string }>
           </div>
         </div>
       </div>
+
+      <SiteFooter subtitle="Scheda prodotto · Sincronizzazione automatica 360Pallix." />
     </main>
   );
 }

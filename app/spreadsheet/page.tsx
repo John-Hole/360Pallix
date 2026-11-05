@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PRODUCTS, eur, rmb, RMB_TO_EUR, type Product } from "@/lib/products";
+import { TikTokIcon } from "@/components/TikTokIcon";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const uniq = (k: keyof Product, items: Product[]) =>
   [...new Set(items.map((p) => String(p[k] || "")).filter((s) => s && s !== "-" && s !== "—"))].sort();
@@ -191,6 +193,17 @@ function SpreadsheetContent() {
             <Link href="/dogana" className="sheet-nav-pill">
               ⚖️ Dogana UE
             </Link>
+            <a
+              href="https://www.tiktok.com/@360pallix"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sheet-nav-pill"
+              title="Segui @360pallix su TikTok"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              <TikTokIcon size={12} />
+              <span>TikTok</span>
+            </a>
           </div>
         </div>
         <div className="filters">
@@ -449,6 +462,8 @@ function SpreadsheetContent() {
           </button>
         </nav>
       )}
+
+      <SiteFooter subtitle="Catalogo live, sincronizzazione automatica e link diretti CSSBuy." />
 
       {legal && (
         <div className="overlay">

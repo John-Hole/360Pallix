@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import { TikTokIcon } from "@/components/TikTokIcon";
+import { SiteFooter } from "@/components/SiteFooter";
 
 interface CouponItem {
   id: string;
@@ -131,7 +133,18 @@ export default function CouponPage() {
               Regole Dogana
             </Link>
           </div>
-          <div className="sheet-nav-right" aria-hidden="true" />
+          <div className="sheet-nav-right">
+            <a
+              href="https://www.tiktok.com/@360pallix"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sheet-social-pill"
+              title="Segui @360pallix su TikTok"
+            >
+              <TikTokIcon size={13} />
+              <span>TikTok @360pallix</span>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -402,6 +415,8 @@ export default function CouponPage() {
           </Link>
         </div>
       </div>
+
+      <SiteFooter subtitle="Coupon esclusivi, pacchetti sconto e promozioni per CSSBuy." />
     </main>
   );
 }

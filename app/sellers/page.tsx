@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BRANDS, SELLERS, type BrandItem, type SellerItem } from "@/lib/sellers";
+import { TikTokIcon } from "@/components/TikTokIcon";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const BRAND_CATEGORIES = [
   "Tutti",
@@ -133,7 +135,18 @@ export default function SellersPage() {
               Regole Dogana
             </Link>
           </div>
-          <div className="sheet-nav-right" aria-hidden="true" />
+          <div className="sheet-nav-right">
+            <a
+              href="https://www.tiktok.com/@360pallix"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="sheet-social-pill"
+              title="Segui @360pallix su TikTok"
+            >
+              <TikTokIcon size={13} />
+              <span>TikTok @360pallix</span>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -382,6 +395,8 @@ export default function SellersPage() {
           </div>
         )}
       </div>
+
+      <SiteFooter subtitle="Directory curata dei 130+ migliori seller verificati." />
     </main>
   );
 }
